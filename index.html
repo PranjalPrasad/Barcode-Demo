@@ -19,6 +19,11 @@
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <!-- Link to external CSS -->
     <link rel="stylesheet" href="product.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     
     <style>
         * {
@@ -118,7 +123,7 @@
         <nav class="flex-1 overflow-y-auto py-4 transition-all duration-300 ease-in-out">
             <ul class="space-y-1">
                 <!-- Navigation items (same as before) -->
-                <li class="hover:bg-blue-700 hover:text-white transition-all duration-200 ease-in-out rounded-md">
+                <!-- <li class="hover:bg-blue-700 hover:text-white transition-all duration-200 ease-in-out rounded-md">
                     <a href="../Dashboard/dashboard.html" class="flex items-center py-3 px-4 text-gray-700 hover:text-white transition-colors duration-200">
                         <i class="fas fa-home mr-3 nav-icon transition-all duration-200"></i>
                         <span class="nav-text transition-all duration-200">Dashboard</span>
@@ -147,14 +152,14 @@
                         <i class="fas fa-shopping-cart mr-3 nav-icon transition-all duration-200"></i>
                         <span class="nav-text transition-all duration-200">Order Management</span>
                     </a>
-                </li>
+                </li> -->
                 <li class="bg-blue-700 text-white rounded-md transition-all duration-200 ease-in-out">
-                    <a href="../Product Management/product.html" class="flex items-center py-3 px-4 text-white transition-colors duration-200">
+                    <a href="index.html" class="flex items-center py-3 px-4 text-white transition-colors duration-200">
                         <i class="fas fa-box mr-3 nav-icon transition-all duration-200"></i>
                         <span class="nav-text transition-all duration-200">Medicine Product Management</span>
                     </a>
                 </li>
-                <li class="hover:bg-blue-700 hover:text-white transition-all duration-200 ease-in-out rounded-md">
+                <!-- <li class="hover:bg-blue-700 hover:text-white transition-all duration-200 ease-in-out rounded-md">
                     <a href="../Mother and Baby Care/motherbabycare.html" class="flex items-center py-3 px-4 text-gray-700 hover:text-white transition-colors duration-200">
                         <i class="fas fa-box mr-3 nav-icon transition-all duration-200"></i>
                         <span class="nav-text transition-all duration-200">Mother & Baby Care Product Management</span>
@@ -177,7 +182,7 @@
                         <i class="fas fa-user-shield mr-3 nav-icon transition-all duration-200"></i>
                         <span class="nav-text transition-all duration-200">Admin Management</span>
                     </a>
-                </li>
+                </li> -->
                 <li class="hover:bg-blue-700 hover:text-white transition-all duration-200 ease-in-out rounded-md">
                     <button id="logoutBtn" class="flex items-center w-full py-3 px-4 text-gray-700 hover:text-white font-semibold text-left transition-colors duration-200">
                         <i class="fas fa-sign-out-alt mr-3 nav-icon transition-all duration-200"></i>
@@ -335,10 +340,10 @@
                        
                         <!-- Barcode Generation Button -->
                         <div class="relative group">
-                            <button id="generateBarcodeBtn" class="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition shadow-sm hover:shadow-md whitespace-nowrap">
+                            <!-- <button id="generateBarcodeBtn" class="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition shadow-sm hover:shadow-md whitespace-nowrap">
                                 <i class="fas fa-barcode mr-2"></i>Generate Barcode
                                 <i class="fas fa-chevron-down ml-2 text-xs"></i>
-                            </button>
+                            </button> -->
                             <div class="absolute right-0 mt-1 w-56 bg-white rounded-lg shadow-xl border border-gray-200 hidden group-hover:block z-50">
                                 <div class="py-1">
                                     <button onclick="openBarcodeModalForSelected()" class="flex items-center w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
@@ -360,37 +365,48 @@
                         </div>
                        
                         <!-- Export Button with Dropdown -->
-                        <div class="relative group">
-                            <button id="exportBtn" class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition shadow-sm hover:shadow-md whitespace-nowrap">
-                                <i class="fas fa-file-excel mr-2"></i>Export
-                                <i class="fas fa-chevron-down ml-2 text-xs"></i>
-                            </button>
-                            <div class="absolute right-0 mt-1 w-56 bg-white rounded-lg shadow-xl border border-gray-200 hidden group-hover:block z-50">
-                                <div class="py-1">
-                                    <button onclick="exportToExcel('csv')" class="flex items-center w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
-                                        <i class="fas fa-file-csv mr-3 text-green-500"></i>
-                                        <div>
-                                            <div class="font-medium">Export as CSV</div>
-                                            <div class="text-xs text-gray-500">Quick export in CSV format</div>
-                                        </div>
-                                    </button>
-                                    <button onclick="exportToExcel('excel')" class="flex items-center w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100">
-                                        <i class="fas fa-file-excel mr-3 text-green-600"></i>
-                                        <div>
-                                            <div class="font-medium">Export as Excel</div>
-                                            <div class="text-xs text-gray-500">Complete Excel file with formatting</div>
-                                        </div>
-                                    </button>
-                                    <button onclick="exportToExcel('detailed')" class="flex items-center w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
-                                        <i class="fas fa-file-alt mr-3 text-blue-600"></i>
-                                        <div>
-                                            <div class="font-medium">Export Detailed Report</div>
-                                            <div class="text-xs text-gray-500">Full product details with summary</div>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Export Button with Dropdown -->
+<div class="relative group z-50">   <!-- added z-50 here -->
+    <button id="exportBtn" 
+            class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition shadow-sm hover:shadow-md whitespace-nowrap flex items-center">
+        <i class="fas fa-file-excel mr-2"></i>Export
+        <i class="fas fa-chevron-down ml-2 text-xs"></i>
+    </button>
+
+    <!-- Dropdown - removed 'hidden' and made group-hover more reliable -->
+    <div class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-2xl border border-gray-200 
+                opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 
+                transition-all duration-200 pointer-events-none group-hover:pointer-events-auto z-50">
+        <div class="py-2">
+            <button onclick="exportToExcel('csv')" 
+                    class="flex items-center w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 transition-colors">
+                <i class="fas fa-file-csv mr-3 text-green-500 text-lg"></i>
+                <div>
+                    <div class="font-medium">Export as CSV</div>
+                    <div class="text-xs text-gray-500">Quick export in CSV format</div>
+                </div>
+            </button>
+
+            <button onclick="exportToExcel('excel')" 
+                    class="flex items-center w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 transition-colors">
+                <i class="fas fa-file-excel mr-3 text-green-600 text-lg"></i>
+                <div>
+                    <div class="font-medium">Export as Excel</div>
+                    <div class="text-xs text-gray-500">Complete Excel file with formatting</div>
+                </div>
+            </button>
+
+            <button onclick="exportToExcel('detailed')" 
+                    class="flex items-center w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                <i class="fas fa-file-alt mr-3 text-blue-600 text-lg"></i>
+                <div>
+                    <div class="font-medium">Export Detailed Report</div>
+                    <div class="text-xs text-gray-500">Full product details with summary</div>
+                </div>
+            </button>
+        </div>
+    </div>
+</div>
                     </div>
                 </div>
                
@@ -923,11 +939,11 @@
                                 <p class="text-gray-500">Preview will appear here</p>
                             </div>
                         </div>
-                        <div class="text-center mt-4">
+                        <!-- <div class="text-center mt-4">
                             <button onclick="updateBarcodePreview()" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition">
                                 <i class="fas fa-sync-alt mr-2"></i>Update Preview
                             </button>
-                        </div>
+                        </div> -->
                     </div>
                     
                     <div class="flex justify-between items-center mt-6 pt-6 border-t border-gray-200">

@@ -1,11 +1,15 @@
 // ============================================
-// PRODUCT MANAGEMENT CODE - VANILLA JS VERSION WITH PAGINATION
-// INCLUDES BARCODE AND QR CODE GENERATION FUNCTIONALITY
-// WITH DUMMY DATA (NO BACKEND CONNECTIVITY)
+// PERSISTENCE HELPER FUNCTION (NEW - minimal addition)
 // ============================================
+function saveProductsToStorage() {
+    localStorage.setItem('pharmacyProducts', JSON.stringify(DUMMY_PRODUCTS));
+}
 
+// ============================================
 // Dummy data for testing (replaces backend API)
-const DUMMY_PRODUCTS = [
+// ============================================
+// Load from localStorage if available, otherwise use original dummy data
+let DUMMY_PRODUCTS = JSON.parse(localStorage.getItem('pharmacyProducts')) || [
     {
         productId: 1,
         sku: "SKU-MED001",
@@ -344,7 +348,9 @@ const DUMMY_PRODUCTS = [
     }
 ];
 
+// ============================================
 // Comprehensive Category Structure with Subcategories
+// ============================================
 const categoryStructure = {
     "Prescription Medicines (Upload Prescription)": [
         "Allergy and Fever",
@@ -354,7 +360,7 @@ const categoryStructure = {
         "Skin Medicines",
         "Other"
     ],
-   
+  
     "Wellness": [
         "Vitamins & Supplements",
         "Skin & Hair Care",
@@ -364,7 +370,7 @@ const categoryStructure = {
         "Oral Care",
         "Menstrual Care",
     ],
-   
+  
     "Over-the-Counter (OTC) Medicines": [
         "Ayurvedic Medicines",
         "Allergy",
@@ -373,7 +379,7 @@ const categoryStructure = {
         "Ointments",
         "Health Supplements",
     ],
-   
+  
     "LifeStyle Disorder": [
         "Diabetes Care",
         "Heart & Blood Pressure",
@@ -382,7 +388,7 @@ const categoryStructure = {
         "Nutritional Support",
         "General Wellness",
     ],
-   
+  
     "Fertility Essentials" : [
         "Male Infertility",
         "Female Infertility",
@@ -390,28 +396,28 @@ const categoryStructure = {
         "Vitamins & Minerals",
         "Herbal Teas & Powders",
     ],
-   
+  
     "Monitoring Devices (BP Monitors, Glucometers)" : [
         "Blood Pressure Monitors",
         "Glucometers & Test Strips",
         "Thermometers",
         "Pulse Oximeters"
     ],
-   
+  
     "Mobility Aids (Walkers, Wheelchairs)" : [
         "Wheelchair",
         "Walkers & Walking Sticks",
         "Crutches",
         "Support Belts & Braces"
     ],
-   
+  
     "Respiratory Care (Nebulizers, Oxygen)" : [
         "Nebulizers & Accessories",
         "Vaporizers & Steam Inhalers",
         "Oxygen Cylinders & Concentrators",
         "CPAP/BIPAP Machines"
     ],
-   
+  
     "Surgical Items" : [
         "Dressings & Bandages",
         "Surgical Consumables",
@@ -424,12 +430,13 @@ const categoryStructure = {
     ]
 };
 
+// ============================================
 // Global Variables
+// ============================================
 let currentProductId = null;
 let allCategories = [];
 let allSubcategories = [];
 const today = new Date();
-
 // Pagination variables
 let currentPage = 1;
 let pageSize = 10; // Default to 10 entries
@@ -437,40 +444,38 @@ let totalProducts = 0;
 let filteredProducts = [];
 let allProducts = []; // Store ALL products
 let searchTerm = ''; // Store current search term
-
 // Price Management variable
 let priceItemsCount = 0;
-
 // Barcode variables
 let selectedProductsForBarcode = [];
 
 // ============================================
-// PRICE MANAGEMENT FUNCTIONS
+// PRICE MANAGEMENT FUNCTIONS (unchanged)
 // ============================================
 function setupPriceManagement() {
     console.log('Setting up price management...');
-   
+  
     // Only run if edit modal is visible
     const modal = document.getElementById('editProductModal');
     if (!modal || modal.style.display !== 'flex') {
         console.warn('Edit modal not visible, skipping price management setup');
         return;
     }
-   
+  
     // Find elements
     const addButton = document.querySelector('.add-price-btn');
     const priceTypeSelect = document.getElementById('edit-price-type');
     const singlePriceSection = document.getElementById('single-price-section');
     const multiplePriceSection = document.getElementById('multiple-price-section');
     const singlePriceInputs = document.querySelectorAll('#single-price-section input[type="number"]');
-   
+  
     if (!addButton || !priceTypeSelect || !singlePriceSection || !multiplePriceSection) {
         console.warn('Price management elements not found in modal');
         return;
     }
-   
+  
     console.log('Setting up price management for visible modal');
-   
+  
     // Function to toggle required attributes for single price inputs
     function toggleSinglePriceRequired(isRequired) {
         singlePriceInputs.forEach(input => {
@@ -481,11 +486,11 @@ function setupPriceManagement() {
             }
         });
     }
-   
+  
     // Function to setup remove button event listener
     function setupRemoveButton(removeButton) {
         if (!removeButton) return;
-       
+      
         removeButton.addEventListener('click', function(e) {
             e.preventDefault();
             const row = this.closest('.price-item-row');
@@ -494,7 +499,7 @@ function setupPriceManagement() {
                 row.style.opacity = '0';
                 row.style.transform = 'translateX(-20px)';
                 row.style.transition = 'all 0.3s ease';
-               
+              
                 setTimeout(() => {
                     row.remove();
                     console.log('Price item removed');
@@ -502,62 +507,62 @@ function setupPriceManagement() {
             }
         });
     }
-   
+  
     // Function to setup all remove buttons
     function setupPriceItemEventListeners() {
         const removeButtons = document.querySelectorAll('.remove-price-btn');
         console.log('Setting up remove buttons:', removeButtons.length);
-       
+      
         removeButtons.forEach(button => {
             setupRemoveButton(button);
         });
     }
-   
+  
     // Set initial state - single price is visible by default
     toggleSinglePriceRequired(true);
-   
+  
     // Price type toggle
     priceTypeSelect.addEventListener('change', function() {
         console.log('Price type changed to:', this.value);
-       
+      
         if (this.value === 'multiple') {
             // Show multiple price section, hide single price
             singlePriceSection.style.display = 'none';
             multiplePriceSection.classList.remove('hidden');
-           
+          
             // Remove required from single price inputs (they're hidden)
             toggleSinglePriceRequired(false);
-           
+          
             // Setup event listeners for price items
             setTimeout(() => {
                 setupPriceItemEventListeners();
             }, 50);
-           
+          
         } else {
             // Show single price section, hide multiple price
             singlePriceSection.style.display = 'block';
             multiplePriceSection.classList.add('hidden');
-           
+          
             // Add required to single price inputs (they're visible)
             toggleSinglePriceRequired(true);
         }
     });
-   
+  
     // Setup add button - clone to remove existing listeners
     const newAddButton = addButton.cloneNode(true);
     addButton.parentNode.replaceChild(newAddButton, addButton);
-   
+  
     // Add price item functionality
     newAddButton.addEventListener('click', function(e) {
         e.preventDefault();
         console.log('Add price button clicked');
-       
+      
         const container = document.querySelector('.price-items-container');
         if (!container) {
             console.error('Price items container not found');
             return;
         }
-       
+      
         // Create new price item row
         const newRow = document.createElement('div');
         newRow.className = 'price-item-row grid grid-cols-4 gap-4 items-center p-3 border border-gray-200 rounded-lg bg-white hover:border-blue-300 transition-colors';
@@ -572,45 +577,45 @@ function setupPriceManagement() {
                 <i class="fas fa-times-circle text-red-500 text-lg hover:text-red-700 transition-colors"></i>
             </button>
         `;
-       
+      
         // Add fade-in animation
         newRow.style.opacity = '0';
         newRow.style.transform = 'translateY(-10px)';
-       
+      
         container.appendChild(newRow);
-       
+      
         // Trigger animation after DOM insertion
         setTimeout(() => {
             newRow.style.opacity = '1';
             newRow.style.transform = 'translateY(0)';
             newRow.style.transition = 'all 0.3s ease';
         }, 10);
-       
+      
         // Add event listener to the new remove button
         const removeBtn = newRow.querySelector('.remove-price-btn');
         setupRemoveButton(removeBtn);
-       
+      
         console.log('New price item added');
     });
-   
+  
     // Setup initial remove buttons
     setupPriceItemEventListeners();
-   
+  
     console.log('Price management setup complete');
 }
 
 function getPriceData() {
     const priceType = document.getElementById('edit-price-type').value;
-   
+  
     if (priceType === 'single') {
         console.log('Using single price type');
-       
+      
         const price = document.getElementById('edit-price').value;
         const oldPrice = document.getElementById('edit-old-price').value;
-       
+      
         const priceValue = price ? parseFloat(price) : 0;
         const oldPriceValue = oldPrice ? parseFloat(oldPrice) : null;
-       
+      
         return {
             prices: [priceValue],
             oldPrices: oldPriceValue !== null ? [oldPriceValue] : [],
@@ -618,32 +623,32 @@ function getPriceData() {
         };
     } else {
         console.log('Using multiple price type');
-       
+      
         const priceItems = document.querySelectorAll('.price-item-row');
         console.log('Found price items:', priceItems.length);
-       
+      
         const prices = [];
         const oldPrices = [];
         const variants = [];
-       
+      
         priceItems.forEach((row, index) => {
             const inputs = row.querySelectorAll('input');
-           
+          
             if (inputs.length >= 3) {
                 const variantInput = inputs[0];
                 const priceInput = inputs[1];
                 const oldPriceInput = inputs[2];
-               
+              
                 const variant = variantInput.value.trim();
                 const price = priceInput.value.trim();
                 const oldPrice = oldPriceInput.value.trim();
-               
+              
                 if (price && !isNaN(parseFloat(price))) {
                     const priceNum = parseFloat(price);
                     if (priceNum >= 0) {
                         prices.push(priceNum);
                         variants.push(variant || `Variant ${index + 1}`);
-                       
+                      
                         if (oldPrice && !isNaN(parseFloat(oldPrice))) {
                             oldPrices.push(parseFloat(oldPrice));
                         } else {
@@ -653,25 +658,25 @@ function getPriceData() {
                 }
             }
         });
-       
+      
         console.log('Collected data:', { prices, oldPrices, variants });
-       
+      
         // Fallback if no prices collected
         if (prices.length === 0) {
             console.log('No prices collected, falling back to single price');
             const fallbackPrice = document.getElementById('edit-price').value;
             const fallbackOldPrice = document.getElementById('edit-old-price').value;
-           
+          
             const priceValue = fallbackPrice ? parseFloat(fallbackPrice) : 0;
             const oldPriceValue = fallbackOldPrice ? parseFloat(fallbackOldPrice) : null;
-           
+          
             return {
                 prices: [priceValue],
                 oldPrices: oldPriceValue !== null ? [oldPriceValue] : [],
                 variants: []
             };
         }
-       
+      
         return {
             prices: prices,
             oldPrices: oldPrices,
@@ -682,61 +687,61 @@ function getPriceData() {
 
 function populatePriceData(priceList, mrp, oldPrice) {
     console.log('populatePriceData called with:', { priceList, mrp, oldPrice });
-   
+  
     // Initialize price management first
     setupPriceManagement();
-   
+  
     // Wait a moment for DOM to be ready
     setTimeout(() => {
         const priceListItems = document.querySelector('.price-items-container');
         console.log('Price items container found:', priceListItems);
-       
+      
         if (!priceListItems) {
             console.error('Price items container not found!');
             return;
         }
-       
+      
         // Clear existing items
         priceListItems.innerHTML = '';
         priceItemsCount = 0;
-       
+      
         if (priceList && Array.isArray(priceList) && priceList.length > 0) {
             console.log('Setting up multiple price type with', priceList.length, 'items');
-           
+          
             // Set to multiple price type
             const priceTypeSelect = document.getElementById('edit-price-type');
             if (priceTypeSelect) {
                 priceTypeSelect.value = 'multiple';
                 priceTypeSelect.dispatchEvent(new Event('change'));
             }
-           
+          
             // Add price items after the DOM has been updated
             setTimeout(() => {
                 priceList.forEach(item => {
                     addPriceItemToContainer(item.variant || item.size || '', item.price, item.originalPrice);
                 });
             }, 100);
-           
+          
             // Clear single price fields
             const priceInput = document.getElementById('edit-price');
             const oldPriceInput = document.getElementById('edit-old-price');
-           
+          
             if (priceInput) priceInput.value = '';
             if (oldPriceInput) oldPriceInput.value = '';
         } else {
             console.log('Setting up single price type');
-           
+          
             // Set to single price type
             const priceTypeSelect = document.getElementById('edit-price-type');
             if (priceTypeSelect) {
                 priceTypeSelect.value = 'single';
                 priceTypeSelect.dispatchEvent(new Event('change'));
             }
-           
+          
             // Set single price fields
             const priceInput = document.getElementById('edit-price');
             const oldPriceInput = document.getElementById('edit-old-price');
-           
+          
             if (priceInput) priceInput.value = mrp || '';
             if (oldPriceInput) oldPriceInput.value = oldPrice || '';
         }
@@ -749,9 +754,9 @@ function addPriceItemToContainer(variant = '', price = '', originalPrice = '') {
         console.error('Cannot find price items container');
         return;
     }
-   
+  
     console.log('Adding price item:', { variant, price, originalPrice });
-   
+  
     // Create new row
     const newRow = document.createElement('div');
     newRow.className = 'price-item-row grid grid-cols-4 gap-4 items-center p-3 border border-gray-200 rounded-lg bg-white hover:border-blue-300 transition-colors';
@@ -769,19 +774,19 @@ function addPriceItemToContainer(variant = '', price = '', originalPrice = '') {
             <i class="fas fa-times-circle text-red-500 text-lg hover:text-red-700 transition-colors"></i>
         </button>
     `;
-   
+  
     // Add fade-in animation
     newRow.style.opacity = '0';
     newRow.style.transform = 'translateY(-10px)';
     container.appendChild(newRow);
-   
+  
     // Trigger animation
     setTimeout(() => {
         newRow.style.opacity = '1';
         newRow.style.transform = 'translateY(0)';
         newRow.style.transition = 'all 0.3s ease';
     }, 10);
-   
+  
     // Add event listener to remove button
     const removeBtn = newRow.querySelector('.remove-price-btn');
     if (removeBtn) {
@@ -792,7 +797,7 @@ function addPriceItemToContainer(variant = '', price = '', originalPrice = '') {
                 row.style.opacity = '0';
                 row.style.transform = 'translateX(-20px)';
                 row.style.transition = 'all 0.3s ease';
-               
+              
                 setTimeout(() => {
                     row.remove();
                     console.log('Price item removed');
@@ -800,23 +805,23 @@ function addPriceItemToContainer(variant = '', price = '', originalPrice = '') {
             }
         });
     }
-   
+  
     priceItemsCount++;
 }
 
 // ============================================
-// SIDEBAR FUNCTIONS
+// SIDEBAR FUNCTIONS (unchanged)
 // ============================================
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
-   
+  
     if (window.innerWidth < 768) {
         // Mobile: Just toggle visibility
         sidebar.classList.toggle('translate-x-0');
     } else {
         // Desktop: Toggle between collapsed and expanded
         sidebar.classList.toggle('collapsed');
-       
+      
         // Update arrow icon
         const sidebarArrow = document.getElementById('sidebar-arrow');
         if (sidebar.classList.contains('collapsed')) {
@@ -832,7 +837,7 @@ function toggleSidebar() {
 function initializeSidebar() {
     const sidebar = document.getElementById('sidebar');
     const sidebarArrow = document.getElementById('sidebar-arrow');
-   
+  
     // Set initial state based on screen width
     if (window.innerWidth >= 768) {
         // Desktop: Start expanded
@@ -847,11 +852,11 @@ function initializeSidebar() {
 
 function handleResponsiveSidebar() {
     const sidebar = document.getElementById('sidebar');
-   
+  
     if (window.innerWidth >= 768) {
         // Desktop: Ensure sidebar is visible
         sidebar.classList.remove('translate-x-0');
-       
+      
         // Reset to expanded state on desktop if it was collapsed
         if (!sidebar.classList.contains('collapsed')) {
             sidebar.classList.remove('collapsed');
@@ -873,18 +878,18 @@ class ProductService {
     async getProductById(productId) {
         try {
             console.log(`Fetching product by ID: ${productId}`);
-           
+          
             // Simulate network delay
             await new Promise(resolve => setTimeout(resolve, 100));
-           
+          
             const product = DUMMY_PRODUCTS.find(p => p.productId == productId);
-           
+          
             if (!product) {
                 throw new Error(`Product with ID ${productId} not found`);
             }
-           
+          
             console.log('Product fetched:', product);
-           
+          
             // Add missing fields with defaults
             return {
                 ...product,
@@ -899,14 +904,14 @@ class ProductService {
             throw error;
         }
     }
-   
+  
     async getAllProducts(page = 0, size = 1000) {
         try {
             console.log(`Fetching products from dummy data`);
-           
+          
             // Simulate network delay
             await new Promise(resolve => setTimeout(resolve, 300));
-           
+          
             // Process each product to add missing fields
             const processedProducts = DUMMY_PRODUCTS.map(product => {
                 return {
@@ -920,7 +925,7 @@ class ProductService {
                                       product.approved === false ? 'REJECTED' : 'PENDING'
                 };
             });
-           
+          
             console.log(`Found ${processedProducts.length} products in dummy data`);
             console.log('First processed product:', processedProducts[0]);
             return processedProducts;
@@ -933,18 +938,18 @@ class ProductService {
             return [];
         }
     }
-   
+  
     async createProduct(productData, mainImage, subImages = []) {
         try {
             console.log('Creating new product with dummy data');
-           
+          
             // Simulate network delay
             await new Promise(resolve => setTimeout(resolve, 500));
-           
+          
             // Generate a new product ID
             const maxId = DUMMY_PRODUCTS.reduce((max, p) => Math.max(max, p.productId || 0), 0);
             const newProductId = maxId + 1;
-           
+          
             // Create new product object
             const newProduct = {
                 productId: newProductId,
@@ -978,10 +983,15 @@ class ProductService {
                     dosage: productData.dosage || ''
                 }
             };
-           
+          
             // Add to dummy data
             DUMMY_PRODUCTS.push(newProduct);
-           
+          
+            // ───────────────────────────────────────────────────────
+            // NEW: Save to localStorage so product persists on refresh
+            saveProductsToStorage();
+            // ───────────────────────────────────────────────────────
+          
             console.log('Product created successfully:', newProduct);
             return newProduct;
         } catch (error) {
@@ -989,21 +999,21 @@ class ProductService {
             throw error;
         }
     }
-   
+  
     async updateProduct(productId, productData, mainImage = null, subImages = []) {
         try {
             console.log(`Updating product ${productId} with dummy data`);
-           
+          
             // Simulate network delay
             await new Promise(resolve => setTimeout(resolve, 500));
-           
+          
             // Find product index
             const productIndex = DUMMY_PRODUCTS.findIndex(p => p.productId == productId);
-           
+          
             if (productIndex === -1) {
                 throw new Error(`Product with ID ${productId} not found`);
             }
-           
+          
             // Update the product
             const updatedProduct = {
                 ...DUMMY_PRODUCTS[productIndex],
@@ -1029,10 +1039,15 @@ class ProductService {
                 // Update images if provided
                 productMainImage: mainImage ? 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=150&h=150&fit=crop&crop=center' : DUMMY_PRODUCTS[productIndex].productMainImage
             };
-           
+          
             // Update in dummy data
             DUMMY_PRODUCTS[productIndex] = updatedProduct;
-           
+
+            // ───────────────────────────────────────────────────────
+            // NEW: Save to localStorage after update
+            saveProductsToStorage();
+            // ───────────────────────────────────────────────────────
+          
             console.log('Product updated successfully:', updatedProduct);
             return updatedProduct;
         } catch (error) {
@@ -1047,29 +1062,34 @@ class VerificationService {
         try {
             console.log(`=== VERIFICATION REQUEST ===`);
             console.log(`Action: ${action} for product ID: ${productId}`);
-           
+          
             // Simulate network delay
             await new Promise(resolve => setTimeout(resolve, 300));
-           
+          
             // Find product index
             const productIndex = DUMMY_PRODUCTS.findIndex(p => p.productId == productId);
-           
+          
             if (productIndex === -1) {
                 throw new Error(`Product with ID ${productId} not found`);
             }
-           
+          
             // Update verification status
             DUMMY_PRODUCTS[productIndex].approved = action === 'APPROVE';
-           
+          
+            // ───────────────────────────────────────────────────────
+            // NEW: Save after verification status change
+            saveProductsToStorage();
+            // ───────────────────────────────────────────────────────
+
             const result = {
                 success: true,
                 message: `Product ${action === 'APPROVE' ? 'approved' : 'rejected'} successfully`,
                 productId: productId
             };
-           
+          
             console.log('Success Response:', result);
             return result;
-           
+          
         } catch (error) {
             console.error('Verification error details:', error);
             throw error;
@@ -1082,7 +1102,7 @@ const productService = new ProductService();
 const verificationService = new VerificationService();
 
 // ============================================
-// UTILITY FUNCTIONS
+// UTILITY FUNCTIONS (unchanged)
 // ============================================
 function getStockStatus(quantity) {
     if (quantity === 0 || quantity === null || quantity === undefined) return 'Out of Stock';
@@ -1094,7 +1114,7 @@ function getStarRating(rating) {
     let stars = '';
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;
-   
+  
     for (let i = 0; i < fullStars; i++) {
         stars += '<i class="fas fa-star text-yellow-400"></i>';
     }
@@ -1108,13 +1128,14 @@ function getStarRating(rating) {
     return stars;
 }
 
+// Helper function to format date (ensure this exists in your code)
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
-   
+  
     if (dateString.includes('T')) {
         dateString = dateString.split('T')[0];
     }
-   
+  
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'N/A';
     const day = String(date.getDate()).padStart(2, '0');
@@ -1123,18 +1144,20 @@ function formatDate(dateString) {
     return `${day}-${month}-${year}`;
 }
 
+console.log('✅ Barcode generation functions fixed and loaded!');
+
 function formatDateTime(dateString) {
     if (!dateString) return 'N/A';
-   
+  
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'N/A';
-   
+  
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
-   
+  
     return `${day}-${month}-${year} ${hours}:${minutes}`;
 }
 
@@ -1149,11 +1172,11 @@ function isExpiringSoon(expiryDate) {
 function getRowClass(product) {
     const stockStatus = getStockStatus(product.productQuantity);
     const expiring = isExpiringSoon(product.expDate);
-   
+  
     // Map approved to verification status for row highlighting
     const verificationStatus = product.approved === true ? 'APPROVED' :
                               product.approved === false ? 'REJECTED' : 'PENDING';
-   
+  
     if (verificationStatus === 'PENDING') return 'verification-pending-row';
     if (verificationStatus === 'REJECTED') return 'verification-rejected-row';
     if (stockStatus === 'Low Stock') return 'status-low-stock-row';
@@ -1163,12 +1186,12 @@ function getRowClass(product) {
 }
 
 // ============================================
-// CATEGORY MANAGEMENT FUNCTIONS
+// CATEGORY MANAGEMENT FUNCTIONS (unchanged)
 // ============================================
 async function initializeCategories() {
     // Start with static categories
     allCategories = Object.keys(categoryStructure);
-   
+  
     // Extract all subcategories
     allSubcategories = [];
     Object.values(categoryStructure).forEach(subs => {
@@ -1178,45 +1201,45 @@ async function initializeCategories() {
             }
         });
     });
-   
+  
     // Try to fetch categories from dummy data
     try {
         const products = await productService.getAllProducts(0, 1000);
-       
+      
         // Extract unique categories from products
         const productCategories = [...new Set(products
             .map(p => p.productCategory)
             .filter(cat => cat && cat.trim() !== '')
         )];
-       
+      
         // Merge categories
         productCategories.forEach(cat => {
             if (!allCategories.includes(cat)) {
                 allCategories.push(cat);
             }
         });
-       
+      
         // Extract unique subcategories from products
         const productSubcategories = [...new Set(products
             .map(p => p.productSubCategory)
             .filter(sub => sub && sub.trim() !== '')
         )];
-       
+      
         // Merge subcategories
         productSubcategories.forEach(sub => {
             if (!allSubcategories.includes(sub)) {
                 allSubcategories.push(sub);
             }
         });
-       
+      
     } catch (error) {
         console.error('Error loading categories from dummy data:', error);
     }
-   
+  
     // Sort alphabetically
     allCategories.sort();
     allSubcategories.sort();
-   
+  
     // Populate dropdowns
     populateCategoryDropdowns();
 }
@@ -1224,24 +1247,24 @@ async function initializeCategories() {
 function populateCategoryDropdowns() {
     const categoryFilter = document.getElementById('categoryFilter');
     const editCategory = document.getElementById('edit-category');
-   
+  
     // Clear existing options
     categoryFilter.innerHTML = '<option value="">All Categories</option>';
     editCategory.innerHTML = '<option value="">Select Category</option>';
-   
+  
     // Add categories
     allCategories.forEach(category => {
         const option1 = document.createElement('option');
         option1.value = category;
         option1.textContent = category;
         categoryFilter.appendChild(option1);
-       
+      
         const option2 = document.createElement('option');
         option2.value = category;
         option2.textContent = category;
         editCategory.appendChild(option2);
     });
-   
+  
     // Add "Other" option
     const otherOption = document.createElement('option');
     otherOption.value = 'Other';
@@ -1253,13 +1276,13 @@ function populateCategoryDropdowns() {
 function populateSubcategoryDropdown(category = null) {
     const subcategoryFilter = document.getElementById('subcategoryFilter');
     const editType = document.getElementById('edit-type');
-   
+  
     // Clear existing options
     subcategoryFilter.innerHTML = '<option value="">All Subcategories</option>';
     editType.innerHTML = '<option value="">Select Subcategory</option>';
-   
+  
     let subcategories = [];
-   
+  
     if (category && category !== 'Other') {
         // Get subcategories for selected category
         if (categoryStructure[category]) {
@@ -1272,59 +1295,59 @@ function populateSubcategoryDropdown(category = null) {
         // Show all subcategories
         subcategories = allSubcategories;
     }
-   
+  
     // Add subcategories
     subcategories.forEach(sub => {
         const option1 = document.createElement('option');
         option1.value = sub;
         option1.textContent = sub;
         subcategoryFilter.appendChild(option1);
-       
+      
         const option2 = document.createElement('option');
         option2.value = sub;
         option2.textContent = sub;
         editType.appendChild(option2);
     });
-   
+  
     // Add "Other" option
     const otherOption = document.createElement('option');
     otherOption.value = 'Other';
     otherOption.textContent = 'Other (Specify)';
     subcategoryFilter.appendChild(otherOption.cloneNode(true));
     editType.appendChild(otherOption);
-   
+  
     // Enable dropdowns
     subcategoryFilter.disabled = false;
     editType.disabled = false;
 }
 
 // ============================================
-// FORM HANDLING FUNCTIONS
+// FORM HANDLING FUNCTIONS (unchanged)
 // ============================================
 function openEditModal(product = null) {
     console.log('Opening edit modal...');
-   
+  
     const editProductModal = document.getElementById('editProductModal');
     const modalTitle = document.getElementById('editModalTitle');
-   
+  
     // Check if modal exists
     if (!editProductModal) {
         console.error('Edit modal not found in DOM!');
         showSuccessPopup('Error: Edit form not available', 'error');
         return;
     }
-   
+  
     if (product && product.productId) {
         // EDIT MODE
         modalTitle.textContent = 'Edit Product';
         currentProductId = product.productId;
-       
+      
         console.log('Loading product data for editing:', product.productName);
         console.log('Product ID:', product.productId);
-       
+      
         // RESET FORM FIRST
         resetEditForm();
-       
+      
         // Wait a moment for reset to complete, then populate data
         setTimeout(() => {
             // Fill form with product data using safe element checking
@@ -1343,7 +1366,7 @@ function openEditModal(product = null) {
                 { id: 'edit-benefits', value: (product.benefitsList || []).join('\n') },
                 { id: 'edit-ingredients', value: (product.ingredientsList || []).join(', ') }
             ];
-           
+          
             // Safely set values only if elements exist
             fields.forEach(field => {
                 const element = document.getElementById(field.id);
@@ -1354,14 +1377,14 @@ function openEditModal(product = null) {
                     console.warn(`Element not found: ${field.id}`);
                 }
             });
-           
+          
             // Check and set directions field if it exists
             const directionsElement = document.getElementById('edit-directions');
             if (directionsElement) {
                 directionsElement.value = (product.directionsList || []).join('\n');
                 console.log(`Set edit-directions`);
             }
-           
+          
             // Handle dynamic fields safely
             if (product.productDynamicFields) {
                 const dynamicFields = [
@@ -1369,7 +1392,7 @@ function openEditModal(product = null) {
                     { id: 'edit-form', value: product.productDynamicFields.form || '' },
                     { id: 'edit-dosage', value: product.productDynamicFields.dosage || '' }
                 ];
-               
+              
                 dynamicFields.forEach(field => {
                     const element = document.getElementById(field.id);
                     if (element) {
@@ -1378,39 +1401,39 @@ function openEditModal(product = null) {
                     }
                 });
             }
-           
+          
             // Handle pricing data
             const sizes = product.productSizes || [];
             const prices = product.productPrice || [];
             const oldPrices = product.productOldPrice || [];
-           
+          
             console.log('Pricing data:', { sizes, prices, oldPrices });
-           
+          
             // IMPORTANT: Check if we have multiple prices vs single price
             if (prices && Array.isArray(prices) && prices.length > 1) {
                 console.log('Setting up multiple price type with', prices.length, 'variants');
-               
+              
                 const priceList = sizes.map((size, index) => ({
                     variant: size,
                     price: prices[index] || 0,
                     originalPrice: oldPrices[index] || 0
                 }));
-               
+              
                 const mrp = prices.length > 0 ? prices[0] : '';
                 const oldPrice = oldPrices.length > 0 ? oldPrices[0] : '';
-               
+              
                 // Use setTimeout to ensure modal is fully rendered
                 setTimeout(() => {
                     populatePriceData(priceList, mrp, oldPrice);
                 }, 200);
-               
+              
             } else {
                 console.log('Setting up single price type');
                 // Set single price fields safely
                 const priceElement = document.getElementById('edit-price');
                 const mrpElement = document.getElementById('edit-mrp');
                 const oldPriceElement = document.getElementById('edit-old-price');
-               
+              
                 if (priceElement) {
                     priceElement.value = prices && prices.length > 0 ? prices[0] : '';
                     console.log(`Set edit-price: ${priceElement.value}`);
@@ -1423,7 +1446,7 @@ function openEditModal(product = null) {
                     oldPriceElement.value = oldPrices && oldPrices.length > 0 ? oldPrices[0] : '';
                     console.log(`Set edit-old-price: ${oldPriceElement.value}`);
                 }
-               
+              
                 // Ensure price type is set to single
                 const priceTypeSelect = document.getElementById('edit-price-type');
                 if (priceTypeSelect) {
@@ -1434,19 +1457,19 @@ function openEditModal(product = null) {
                     }, 100);
                 }
             }
-           
+          
             // Handle sizes safely
             const sizesElement = document.getElementById('edit-sizes');
             if (sizesElement) {
                 sizesElement.value = sizes.join(', ');
                 console.log(`Set edit-sizes: ${sizesElement.value}`);
             }
-           
+          
             // Handle category selection safely
             const categorySelect = document.getElementById('edit-category');
             const categoryOtherContainer = document.getElementById('category-other-container');
             const categoryOtherInput = document.getElementById('edit-category-other');
-           
+          
             if (categorySelect && categoryOtherContainer && categoryOtherInput) {
                 if (product.productCategory && allCategories.includes(product.productCategory)) {
                     categorySelect.value = product.productCategory;
@@ -1461,18 +1484,18 @@ function openEditModal(product = null) {
                     categoryOtherInput.required = true;
                     console.log(`Set edit-category to Other: ${product.productCategory}`);
                 }
-               
+              
                 // Enable subcategory dropdown and populate
                 populateSubcategoryDropdown(categorySelect.value);
             } else {
                 console.warn('Category elements not found');
             }
-           
+          
             // Handle subcategory selection safely
             const typeSelect = document.getElementById('edit-type');
             const typeOtherContainer = document.getElementById('type-other-container');
             const typeOtherInput = document.getElementById('edit-type-other');
-   
+  
             if (typeSelect && typeOtherContainer && typeOtherInput) {
                 if (product.productSubCategory && allSubcategories.includes(product.productSubCategory)) {
                     typeSelect.value = product.productSubCategory;
@@ -1490,43 +1513,43 @@ function openEditModal(product = null) {
             } else {
                 console.warn('Type elements not found');
             }
-           
+          
             // Show verification status for existing products safely
             const verificationStatusContainer = document.getElementById('verification-status-container');
             const verificationStatusSelect = document.getElementById('edit-verification-status');
-   
+  
             if (verificationStatusContainer && verificationStatusSelect) {
                 verificationStatusContainer.classList.remove('hidden');
                 verificationStatusSelect.value = product.verificationStatus || 'PENDING';
                 console.log(`Set verification status: ${verificationStatusSelect.value}`);
             }
-           
+          
             // Update the file input placeholder if main image exists
             const mainImageInput = document.getElementById('edit-main-image');
             if (mainImageInput && product.productMainImage) {
                 mainImageInput.placeholder = 'Current image exists. Upload new to replace.';
             }
-           
+          
         }, 100); // Wait for reset to complete
-       
+      
     } else {
         // ADD NEW PRODUCT MODE
         modalTitle.textContent = 'Add New Product';
         currentProductId = null;
-       
+      
         // Reset form for new product
         resetEditForm();
-       
+      
         // Hide verification status for new products
         const verificationContainer = document.getElementById('verification-status-container');
         if (verificationContainer) {
             verificationContainer.classList.add('hidden');
         }
     }
-   
+  
     // Show the modal
     editProductModal.style.display = 'flex';
-   
+  
     // Setup price management AFTER modal is visible
     setTimeout(() => {
         setupPriceManagement();
@@ -1536,27 +1559,27 @@ function openEditModal(product = null) {
 // Helper function to safely reset the form
 function resetEditForm() {
     console.log('Resetting edit form...');
-   
+  
     const editForm = document.getElementById('editProductForm');
     if (editForm) {
         editForm.reset();
         console.log('Form reset complete');
     }
-   
+  
     // Reset category dropdowns
     const editCategory = document.getElementById('edit-category');
     const editType = document.getElementById('edit-type');
-   
+  
     if (editCategory) editCategory.value = '';
     if (editType) {
         editType.value = '';
         editType.disabled = true;
     }
-   
+  
     // Reset other containers
     const categoryOtherContainer = document.getElementById('category-other-container');
     const typeOtherContainer = document.getElementById('type-other-container');
-   
+  
     if (categoryOtherContainer) {
         categoryOtherContainer.classList.add('hidden');
         const categoryOtherInput = document.getElementById('edit-category-other');
@@ -1565,7 +1588,7 @@ function resetEditForm() {
             categoryOtherInput.required = false;
         }
     }
-   
+  
     if (typeOtherContainer) {
         typeOtherContainer.classList.add('hidden');
         const typeOtherInput = document.getElementById('edit-type-other');
@@ -1574,7 +1597,7 @@ function resetEditForm() {
             typeOtherInput.required = false;
         }
     }
-   
+  
     // Reset price type to single
     const priceTypeSelect = document.getElementById('edit-price-type');
     if (priceTypeSelect) {
@@ -1584,21 +1607,21 @@ function resetEditForm() {
             priceTypeSelect.dispatchEvent(new Event('change'));
         }, 50);
     }
-   
+  
     // Clear single price fields
     const priceFields = ['edit-price', 'edit-mrp', 'edit-old-price'];
     priceFields.forEach(id => {
         const element = document.getElementById(id);
         if (element) element.value = '';
     });
-   
+  
     // Clear dynamic fields
     const dynamicFields = ['edit-strength', 'edit-form', 'edit-dosage', 'edit-directions', 'edit-sizes'];
     dynamicFields.forEach(id => {
         const element = document.getElementById(id);
         if (element) element.value = '';
     });
-   
+  
     // Clear image inputs
     const imageInputs = ['edit-main-image', 'edit-image1', 'edit-image2', 'edit-image3', 'edit-image4'];
     imageInputs.forEach(id => {
@@ -1608,7 +1631,7 @@ function resetEditForm() {
             input.placeholder = '';
         }
     });
-   
+  
     // Clear price items container
     const priceItemsContainer = document.querySelector('.price-items-container');
     if (priceItemsContainer) {
@@ -1619,7 +1642,7 @@ function resetEditForm() {
                 row.remove();
             }
         });
-       
+      
         // Clear inputs in the first row
         const firstRow = priceItemsContainer.querySelector('.price-item-row');
         if (firstRow) {
@@ -1629,24 +1652,24 @@ function resetEditForm() {
             });
         }
     }
-   
+  
     // Reset verification status if it exists
     const verificationStatusSelect = document.getElementById('edit-verification-status');
     if (verificationStatusSelect) {
         verificationStatusSelect.value = 'PENDING';
     }
-   
+  
     // Hide verification container
     const verificationContainer = document.getElementById('verification-status-container');
     if (verificationContainer) {
         verificationContainer.classList.add('hidden');
     }
-   
+  
     console.log('Form reset completed successfully');
 }
 
 // ============================================
-// PAGINATION FUNCTIONS
+// PAGINATION FUNCTIONS (unchanged)
 // ============================================
 function setupPaginationControls() {
     const paginationControls = document.createElement('div');
@@ -1663,10 +1686,10 @@ function setupPaginationControls() {
             </select>
             <span class="text-sm text-gray-700 ml-3">entries</span>
         </div>
-       
+      
         <div class="flex items-center">
             <span id="paginationInfo" class="text-sm text-gray-700 mr-4"></span>
-           
+          
             <nav class="flex space-x-1">
                 <button id="firstPageBtn" class="pagination-btn pagination-nav" title="First Page">
                     <i class="fas fa-angle-double-left"></i>
@@ -1674,9 +1697,9 @@ function setupPaginationControls() {
                 <button id="prevPageBtn" class="pagination-btn pagination-nav" title="Previous Page">
                     <i class="fas fa-chevron-left"></i>
                 </button>
-               
+              
                 <div id="pageNumbers" class="flex space-x-1"></div>
-               
+              
                 <button id="nextPageBtn" class="pagination-btn pagination-nav" title="Next Page">
                     <i class="fas fa-chevron-right"></i>
                 </button>
@@ -1686,30 +1709,30 @@ function setupPaginationControls() {
             </nav>
         </div>
     `;
-   
+  
     // Find the product table container and add pagination controls after it
     const productTableContainer = document.querySelector('.product-table-container');
     productTableContainer.parentNode.insertBefore(paginationControls, productTableContainer.nextSibling);
-   
+  
     // Add event listeners for pagination controls
     document.getElementById('pageSizeSelect').addEventListener('change', function() {
         pageSize = parseInt(this.value);
         currentPage = 1; // Reset to first page when page size changes
         renderTable();
     });
-   
+  
     document.getElementById('firstPageBtn').addEventListener('click', () => {
         currentPage = 1;
         renderTable();
     });
-   
+  
     document.getElementById('prevPageBtn').addEventListener('click', () => {
         if (currentPage > 1) {
             currentPage--;
             renderTable();
         }
     });
-   
+  
     document.getElementById('nextPageBtn').addEventListener('click', () => {
         const totalPages = Math.ceil(filteredProducts.length / pageSize);
         if (currentPage < totalPages) {
@@ -1717,13 +1740,13 @@ function setupPaginationControls() {
             renderTable();
         }
     });
-   
+  
     document.getElementById('lastPageBtn').addEventListener('click', () => {
         const totalPages = Math.ceil(filteredProducts.length / pageSize);
         currentPage = totalPages;
         renderTable();
     });
-   
+  
     // Add CSS for pagination
     const style = document.createElement('style');
     style.textContent = `
@@ -1741,36 +1764,36 @@ function setupPaginationControls() {
             cursor: pointer;
             transition: all 0.2s;
         }
-       
+      
         .pagination-btn:hover:not(:disabled) {
             background-color: #f3f4f6;
             border-color: #9ca3af;
         }
-       
+      
         .pagination-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
-       
+      
         .pagination-nav {
             padding: 0 8px;
         }
-       
+      
         .pagination-nav i {
             font-size: 12px;
         }
-       
+      
         .page-number-btn {
             min-width: 32px;
             padding: 0 8px;
         }
-       
+      
         .page-number-btn.active {
             background-color: #3b82f6;
             color: white;
             border-color: #3b82f6;
         }
-       
+      
         .page-number-btn.active:hover {
             background-color: #2563eb;
         }
@@ -1781,31 +1804,31 @@ function setupPaginationControls() {
 function updatePaginationControls() {
     const totalProducts = filteredProducts.length;
     const totalPages = Math.ceil(totalProducts / pageSize);
-   
+  
     // Update pagination info
     const startIndex = (currentPage - 1) * pageSize + 1;
     const endIndex = Math.min(currentPage * pageSize, totalProducts);
     document.getElementById('paginationInfo').textContent =
         `Showing ${startIndex} to ${endIndex} of ${totalProducts} entries`;
-   
+  
     // Update page numbers
     const pageNumbersContainer = document.getElementById('pageNumbers');
     pageNumbersContainer.innerHTML = '';
-   
+  
     // Show max 5 page numbers
     let startPage = Math.max(1, currentPage - 2);
     let endPage = Math.min(totalPages, currentPage + 2);
-   
+  
     // Adjust if we're near the beginning
     if (currentPage <= 3) {
         endPage = Math.min(5, totalPages);
     }
-   
+  
     // Adjust if we're near the end
     if (currentPage >= totalPages - 2) {
         startPage = Math.max(1, totalPages - 4);
     }
-   
+  
     for (let i = startPage; i <= endPage; i++) {
         const pageBtn = document.createElement('button');
         pageBtn.className = `pagination-btn page-number-btn ${i === currentPage ? 'active' : ''}`;
@@ -1816,7 +1839,7 @@ function updatePaginationControls() {
         });
         pageNumbersContainer.appendChild(pageBtn);
     }
-   
+  
     // Update navigation buttons state
     document.getElementById('firstPageBtn').disabled = currentPage === 1;
     document.getElementById('prevPageBtn').disabled = currentPage === 1;
@@ -1825,12 +1848,12 @@ function updatePaginationControls() {
 }
 
 // ============================================
-// TABLE RENDERING FUNCTIONS
+// TABLE RENDERING FUNCTIONS (unchanged)
 // ============================================
 function renderTable() {
     const tableBody = document.querySelector('#productTable tbody');
     tableBody.innerHTML = '';
-   
+  
     if (!filteredProducts || filteredProducts.length === 0) {
         const row = document.createElement('tr');
         row.innerHTML = '<td colspan="15" class="text-center py-8 text-gray-500">No products found</td>';
@@ -1838,16 +1861,16 @@ function renderTable() {
         updatePaginationControls();
         return;
     }
-   
+  
     // Calculate pagination slice
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = Math.min(startIndex + pageSize, filteredProducts.length);
     const productsToShow = filteredProducts.slice(startIndex, endIndex);
-   
+  
     // Create table rows
     productsToShow.forEach((product, index) => {
         console.log(`Processing product ${startIndex + index + 1}:`, product.productName);
-       
+      
         // Handle pricing display
         let pricingDisplay = 'N/A';
         let pricingDetails = '';
@@ -1857,21 +1880,21 @@ function renderTable() {
                 pricingDetails = `(+${product.productPrice.length - 1} more)`;
             }
         }
-       
+      
         // Show sizes count
         const sizesCount = product.productSizes ? product.productSizes.length : 0;
-       
+      
         // Use actual image URLs from dummy data
         const mainImageUrl = product.productMainImage || 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=150&h=150&fit=crop&crop=center';
-       
+      
         // Determine verification status from approved field
         const verificationStatus = product.approved === true ? 'APPROVED' :
                                  product.approved === false ? 'REJECTED' : 'PENDING';
-       
+      
         // Create table row
         const row = document.createElement('tr');
         row.className = getRowClass(product);
-       
+      
         // Create row HTML with checkbox
         row.innerHTML = `
             <td class="text-center">
@@ -1950,26 +1973,26 @@ function renderTable() {
                 </div>
             </td>
         `;
-       
+      
         tableBody.appendChild(row);
     });
-   
+  
     // Attach event listeners to the new buttons
     attachTableEventListeners();
-   
+  
     // Update pagination controls
     updatePaginationControls();
 }
 
 // ============================================
-// DATA LOADING AND FILTER FUNCTIONS
+// DATA LOADING AND FILTER FUNCTIONS (unchanged)
 // ============================================
 async function loadProducts(productsFromAPI = null) {
     try {
         console.log('loadProducts called');
-       
+      
         let productsData;
-       
+      
         if (productsFromAPI) {
             productsData = productsFromAPI;
             console.log('Using provided products:', productsData.length);
@@ -1981,21 +2004,21 @@ async function loadProducts(productsFromAPI = null) {
         }
         // Store ALL products
         allProducts = productsData;
-       
+      
         // Apply current filters and search to all products
         applyAllFilters();
-       
+      
         console.log('Table populated with', filteredProducts.length, 'products');
-       
+      
     } catch (error) {
         console.error('Error loading products:', error);
         console.error('Error stack:', error.stack);
         showSuccessPopup('Error loading products. Please check console for details.', 'error');
-       
+      
         // Show error in table
         const tableBody = document.querySelector('#productTable tbody');
         tableBody.innerHTML = '<tr><td colspan="15" class="text-center py-8 text-red-500">Error loading products. Please try again.</td></tr>';
-       
+      
         // Reset filtered products
         filteredProducts = [];
         allProducts = [];
@@ -2006,37 +2029,37 @@ async function loadProducts(productsFromAPI = null) {
 // Main filter function that combines all filters
 function applyAllFilters() {
     console.log('applyAllFilters called');
-   
+  
     if (!allProducts || allProducts.length === 0) {
         filteredProducts = [];
         renderTable();
         return;
     }
-   
+  
     // Start with all products
     let filtered = [...allProducts];
-   
+  
     // Get current filter values
     const category = document.getElementById('categoryFilter').value;
     const subcategory = document.getElementById('subcategoryFilter').value;
     const prescription = document.getElementById('prescriptionFilter').value;
     const stock = document.getElementById('stockFilter').value;
     const verification = document.getElementById('verificationFilter').value;
-   
+  
     console.log('Current filters:', { category, subcategory, prescription, stock, verification, searchTerm });
-   
+  
     // Apply category filter
     if (category) {
         filtered = filtered.filter(p => p.productCategory === category);
         console.log(`After category filter (${category}):`, filtered.length);
     }
-   
+  
     // Apply subcategory filter
     if (subcategory) {
         filtered = filtered.filter(p => p.productSubCategory === subcategory);
         console.log(`After subcategory filter (${subcategory}):`, filtered.length);
     }
-   
+  
     // Apply prescription filter
     if (prescription) {
         if (prescription === 'Yes') {
@@ -2055,7 +2078,7 @@ function applyAllFilters() {
         }
         console.log(`After prescription filter (${prescription}):`, filtered.length);
     }
-   
+  
     // Apply stock filter - check both stock status methods
     if (stock) {
         filtered = filtered.filter(p => {
@@ -2063,9 +2086,9 @@ function applyAllFilters() {
             const quantity = p.productQuantity || 0;
             const hasStockField = p.productStock !== undefined;
             const stockStatusFromField = p.productStock || '';
-           
+          
             let stockStatus;
-           
+          
             // First try to get stock status from productStock field
             if (hasStockField) {
                 stockStatus = stockStatusFromField;
@@ -2075,11 +2098,11 @@ function applyAllFilters() {
                 stockStatus = getStockStatus(quantity);
                 console.log(`Product ${p.productId}: Calculated from quantity ${quantity}: "${stockStatus}"`);
             }
-           
+          
             // Normalize stock status for comparison
             const normalizedStatus = stockStatus.toLowerCase().replace(/\s+/g, '-');
             console.log(`Product ${p.productId}: Normalized status: "${normalizedStatus}" vs filter: "${stock}"`);
-           
+          
             if (stock === 'in-stock') {
                 return normalizedStatus === 'in-stock' || normalizedStatus === 'in-stock' || normalizedStatus.includes('in');
             }
@@ -2092,7 +2115,7 @@ function applyAllFilters() {
             return true;
         });
         console.log(`After stock filter (${stock}):`, filtered.length);
-       
+      
         // Debug: Show what products passed the filter
         filtered.slice(0, 3).forEach((p, i) => {
             const quantity = p.productQuantity || 0;
@@ -2100,7 +2123,7 @@ function applyAllFilters() {
             console.log(` Sample filtered product ${i+1}: ID=${p.productId}, Quantity=${quantity}, productStock="${stockField}"`);
         });
     }
-   
+  
     // Apply verification filter
     if (verification) {
         filtered = filtered.filter(p => {
@@ -2110,7 +2133,7 @@ function applyAllFilters() {
         });
         console.log(`After verification filter (${verification}):`, filtered.length);
     }
-   
+  
     // Apply search filter
     if (searchTerm && searchTerm.trim() !== '') {
         const term = searchTerm.toLowerCase().trim();
@@ -2127,35 +2150,35 @@ function applyAllFilters() {
         });
         console.log(`After search filter (${searchTerm}):`, filtered.length);
     }
-   
+  
     // Update filtered products and reset to first page
     filteredProducts = filtered;
     currentPage = 1;
-   
+  
     // Initialize pagination if not already done
     if (!document.getElementById('pageSizeSelect')) {
         setupPaginationControls();
     }
-   
+  
     // Render the table with filtered results
     renderTable();
-   
+  
     // Update stats based on filtered results
     updateStatsWithFilteredData(filtered);
 }
 
 // ============================================
-// EVENT HANDLERS
+// EVENT HANDLERS (unchanged)
 // ============================================
 function setupEventListeners() {
     console.log('Setting up event listeners...');
-   
+  
     // Sidebar toggle buttons
     const toggleSidebarLogo = document.getElementById('toggle-sidebar-logo');
     const closeSidebar = document.getElementById('close-sidebar');
     const toggleSidebarMobile = document.getElementById('toggle-sidebar-mobile');
     const toggleSidebarDesktop = document.getElementById('toggle-sidebar-desktop');
-   
+  
     if (toggleSidebarLogo) toggleSidebarLogo.addEventListener('click', toggleSidebar);
     if (closeSidebar) closeSidebar.addEventListener('click', function() {
         const sidebar = document.getElementById('sidebar');
@@ -2166,7 +2189,7 @@ function setupEventListeners() {
         if (sidebar) sidebar.classList.toggle('translate-x-0');
     });
     if (toggleSidebarDesktop) toggleSidebarDesktop.addEventListener('click', toggleSidebar);
-   
+  
     // Modal close buttons
     const closeDetailModal = document.getElementById('closeDetailModal');
     const closeEditModal = document.getElementById('closeEditModal');
@@ -2174,12 +2197,12 @@ function setupEventListeners() {
     const closeSuccessPopup = document.getElementById('closeSuccessPopup');
     const closeBarcodeModal = document.getElementById('closeBarcodeModal');
     const cancelBarcode = document.getElementById('cancelBarcode');
-   
+  
     if (closeDetailModal) closeDetailModal.addEventListener('click', () => {
         const modal = document.getElementById('productDetailModal');
         if (modal) modal.style.display = 'none';
     });
-   
+  
     if (closeEditModal) closeEditModal.addEventListener('click', () => {
         const modal = document.getElementById('editProductModal');
         if (modal) {
@@ -2187,7 +2210,7 @@ function setupEventListeners() {
             resetEditForm();
         }
     });
-   
+  
     if (cancelEdit) cancelEdit.addEventListener('click', () => {
         const modal = document.getElementById('editProductModal');
         if (modal) {
@@ -2195,15 +2218,15 @@ function setupEventListeners() {
             resetEditForm();
         }
     });
-   
+  
     if (closeSuccessPopup) closeSuccessPopup.addEventListener('click', () => {
         const popup = document.getElementById('successPopup');
         if (popup) popup.style.display = 'none';
     });
-   
+  
     if (closeBarcodeModal) closeBarcodeModal.addEventListener('click', closeBarcodeModalFunc);
     if (cancelBarcode) cancelBarcode.addEventListener('click', closeBarcodeModalFunc);
-   
+  
     // Add product button
     const addProductBtn = document.getElementById('addProductBtn');
     if (addProductBtn) {
@@ -2211,13 +2234,13 @@ function setupEventListeners() {
             openEditModal(); // No parameter for new product
         });
     }
-   
+  
     // Form submissions
     const editProductForm = document.getElementById('editProductForm');
     if (editProductForm) {
         editProductForm.addEventListener('submit', handleFormSubmit);
     }
-   
+  
     // Category change handlers
     const categoryFilter = document.getElementById('categoryFilter');
     if (categoryFilter) {
@@ -2226,13 +2249,13 @@ function setupEventListeners() {
             applyFilters();
         });
     }
-   
+  
     const editCategory = document.getElementById('edit-category');
     if (editCategory) {
         editCategory.addEventListener('change', function() {
             const otherContainer = document.getElementById('category-other-container');
             const otherInput = document.getElementById('edit-category-other');
-           
+          
             if (this.value === 'Other') {
                 if (otherContainer) otherContainer.classList.remove('hidden');
                 if (otherInput) otherInput.required = true;
@@ -2243,17 +2266,17 @@ function setupEventListeners() {
                     otherInput.value = '';
                 }
             }
-           
+          
             populateSubcategoryDropdown(this.value);
         });
     }
-   
+  
     const editType = document.getElementById('edit-type');
     if (editType) {
         editType.addEventListener('change', function() {
             const otherContainer = document.getElementById('type-other-container');
             const otherInput = document.getElementById('edit-type-other');
-           
+          
             if (this.value === 'Other') {
                 if (otherContainer) otherContainer.classList.remove('hidden');
                 if (otherInput) otherInput.required = true;
@@ -2266,18 +2289,18 @@ function setupEventListeners() {
             }
         });
     }
-   
+  
     // Filters
     const subcategoryFilter = document.getElementById('subcategoryFilter');
     const prescriptionFilter = document.getElementById('prescriptionFilter');
     const stockFilter = document.getElementById('stockFilter');
     const verificationFilter = document.getElementById('verificationFilter');
-   
+  
     if (subcategoryFilter) subcategoryFilter.addEventListener('change', applyFilters);
     if (prescriptionFilter) prescriptionFilter.addEventListener('change', applyFilters);
     if (stockFilter) stockFilter.addEventListener('change', applyFilters);
     if (verificationFilter) verificationFilter.addEventListener('change', applyFilters);
-   
+  
     // Search functionality
     let searchTimeout;
     const searchInput = document.getElementById('searchInput');
@@ -2290,7 +2313,7 @@ function setupEventListeners() {
                 applyAllFilters();
             }, 500);
         });
-       
+      
         // Add clear search button
         const searchClearBtn = document.createElement('button');
         searchClearBtn.innerHTML = '<i class="fas fa-times"></i>';
@@ -2303,7 +2326,7 @@ function setupEventListeners() {
         };
         searchInput.parentNode.appendChild(searchClearBtn);
     }
-   
+  
     // Select all checkbox
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
     if (selectAllCheckbox) {
@@ -2315,13 +2338,13 @@ function setupEventListeners() {
             updateSelectedProductsForBarcode();
         });
     }
-   
+  
     // Verification modal event listeners
     const verificationModal = document.getElementById('verificationModal');
     const cancelVerificationBtn = document.getElementById('cancelVerification');
     const submitVerificationBtn = document.getElementById('submitVerification');
     const actionRadios = document.querySelectorAll('input[name="verificationAction"]');
-   
+  
     if (verificationModal) {
         verificationModal.addEventListener('click', function(e) {
             if (e.target === verificationModal) {
@@ -2329,15 +2352,15 @@ function setupEventListeners() {
             }
         });
     }
-   
+  
     if (cancelVerificationBtn) {
         cancelVerificationBtn.addEventListener('click', closeVerificationModal);
     }
-   
+  
     if (submitVerificationBtn) {
         submitVerificationBtn.addEventListener('click', submitVerification);
     }
-   
+  
     if (actionRadios.length > 0) {
         actionRadios.forEach(radio => {
             radio.addEventListener('change', function() {
@@ -2345,7 +2368,7 @@ function setupEventListeners() {
             });
         });
     }
-   
+  
     // Close modals when clicking outside
     window.addEventListener('click', (e) => {
         const modals = ['productDetailModal', 'editProductModal', 'successPopup', 'verificationModal', 'barcodeModal'];
@@ -2365,32 +2388,32 @@ function setupEventListeners() {
             }
         });
     });
-   
+  
     // Generate barcode dropdown functionality
     const generateBarcodeBtn = document.getElementById('generateBarcodeBtn');
     if (generateBarcodeBtn) {
         // Add event listeners to the dropdown buttons in HTML
         // These are already set with onclick handlers in the HTML
     }
-   
+  
     // Logout modal event listeners
     const logoutBtn = document.getElementById('logoutBtn');
     const logoutModal = document.getElementById('logoutModal');
     const confirmLogout = document.getElementById('confirmLogout');
     const cancelLogout = document.getElementById('cancelLogout');
     const closeLogoutModal = document.getElementById('closeLogoutModal');
-   
+  
     if (logoutBtn && logoutModal) {
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
             logoutModal.classList.remove('hidden');
         });
     }
-   
+  
     function closeLogout() {
         if (logoutModal) logoutModal.classList.add('hidden');
     }
-   
+  
     if (cancelLogout) cancelLogout.addEventListener('click', closeLogout);
     if (closeLogoutModal) closeLogoutModal.addEventListener('click', closeLogout);
     if (logoutModal) {
@@ -2398,13 +2421,13 @@ function setupEventListeners() {
             if (e.target === logoutModal) closeLogout();
         });
     }
-   
+  
     if (confirmLogout) {
         confirmLogout.addEventListener('click', () => {
             window.location.href = '../Login/login.html';
         });
     }
-   
+  
     console.log('Event listeners setup complete including barcode functionality');
 }
 
@@ -2415,7 +2438,7 @@ function applyFilters() {
 }
 
 // ============================================
-// ATTACH TABLE EVENT LISTENERS
+// ATTACH TABLE EVENT LISTENERS (unchanged)
 // ============================================
 function attachTableEventListeners() {
     // View buttons
@@ -2430,7 +2453,7 @@ function attachTableEventListeners() {
             }
         });
     });
-   
+  
     // Edit buttons
     document.querySelectorAll('.edit-btn').forEach(button => {
         button.addEventListener('click', function(e) {
@@ -2443,7 +2466,7 @@ function attachTableEventListeners() {
             }
         });
     });
-   
+  
     // Delete buttons
     document.querySelectorAll('.delete-btn').forEach(button => {
         button.addEventListener('click', async function(e) {
@@ -2456,7 +2479,7 @@ function attachTableEventListeners() {
             }
         });
     });
-   
+  
     // Barcode buttons in action column
     document.querySelectorAll('.barcode-action-btn').forEach(button => {
         button.addEventListener('click', function(e) {
@@ -2469,12 +2492,12 @@ function attachTableEventListeners() {
             }
         });
     });
-   
+  
     // Verify/Approve buttons (for pending products)
     document.querySelectorAll('.verify-btn').forEach(button => {
         const newButton = button.cloneNode(true);
         button.parentNode.replaceChild(newButton, button);
-       
+      
         newButton.addEventListener('click', function(e) {
             e.stopPropagation();
             const productId = this.getAttribute('data-id');
@@ -2485,12 +2508,12 @@ function attachTableEventListeners() {
             }
         });
     });
-   
+  
     // Reject buttons (for pending products)
     document.querySelectorAll('.reject-btn').forEach(button => {
         const newButton = button.cloneNode(true);
         button.parentNode.replaceChild(newButton, button);
-       
+      
         newButton.addEventListener('click', function(e) {
             e.stopPropagation();
             const productId = this.getAttribute('data-id');
@@ -2501,12 +2524,12 @@ function attachTableEventListeners() {
             }
         });
     });
-   
+  
     // Unapprove buttons (for approved products)
     document.querySelectorAll('.unapprove-btn').forEach(button => {
         const newButton = button.cloneNode(true);
         button.parentNode.replaceChild(newButton, button);
-       
+      
         newButton.addEventListener('click', function(e) {
             e.stopPropagation();
             const productId = this.getAttribute('data-id');
@@ -2517,7 +2540,7 @@ function attachTableEventListeners() {
             }
         });
     });
-   
+  
     // Re-approve buttons (for rejected products)
     document.querySelectorAll('.reapprove-btn').forEach(button => {
         button.addEventListener('click', function(e) {
@@ -2530,7 +2553,7 @@ function attachTableEventListeners() {
             }
         });
     });
-   
+  
     // Checkbox event listeners
     document.querySelectorAll('.product-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', updateSelectedProductsForBarcode);
@@ -2538,15 +2561,14 @@ function attachTableEventListeners() {
 }
 
 // ============================================
-// VERIFICATION FUNCTIONS
+// VERIFICATION FUNCTIONS (unchanged)
 // ============================================
 let currentVerificationProduct = null;
-
 function showVerificationModal(product, action = null) {
     console.log('Showing verification modal for:', product.productName);
-   
+  
     currentVerificationProduct = product;
-   
+  
     const modal = document.getElementById('verificationModal');
     const productName = document.getElementById('verificationProductName');
     const sku = document.getElementById('verificationSku');
@@ -2556,18 +2578,18 @@ function showVerificationModal(product, action = null) {
     const actionRadios = document.querySelectorAll('input[name="verificationAction"]');
     const submitBtn = document.getElementById('submitVerification');
     const modalTitle = document.getElementById('verificationModalTitle');
-   
+  
     if (!modal) {
         console.error('Verification modal not found!');
         return;
     }
-   
+  
     // Update product info
     productName.textContent = product.productName || 'N/A';
     sku.textContent = product.sku || 'N/A';
     category.textContent = product.productCategory || 'N/A';
     brand.textContent = product.brandName || 'N/A';
-   
+  
     // Update status badge
     const verificationStatus = product.approved === true ? 'APPROVED' :
                                product.approved === false ? 'REJECTED' : 'PENDING';
@@ -2576,14 +2598,14 @@ function showVerificationModal(product, action = null) {
         verificationStatus === 'REJECTED' ? 'bg-red-100 text-red-800' :
         'bg-yellow-100 text-yellow-800'
     }">${verificationStatus}</span>`;
-   
+  
     // Reset form
     actionRadios.forEach(radio => {
         radio.checked = false;
     });
-   
+  
     submitBtn.disabled = true;
-   
+  
     // Set modal title
     if (action === 'APPROVE') {
         modalTitle.textContent = 'Approve Product';
@@ -2592,7 +2614,7 @@ function showVerificationModal(product, action = null) {
     } else {
         modalTitle.textContent = 'Verify Product';
     }
-   
+  
     // If a specific action is passed (from clicking approve/reject buttons), pre-select it
     if (action === 'APPROVE') {
         const approveRadio = document.querySelector('input[value="APPROVE"]');
@@ -2607,10 +2629,10 @@ function showVerificationModal(product, action = null) {
             updateVerificationSubmitButton();
         }
     }
-   
+  
     // Show modal
     modal.classList.remove('hidden');
-   
+  
     // Focus on first radio button
     setTimeout(() => {
         if (actionRadios.length > 0) {
@@ -2622,12 +2644,12 @@ function showVerificationModal(product, action = null) {
 function updateVerificationSubmitButton() {
     const actionRadios = document.querySelectorAll('input[name="verificationAction"]');
     const submitBtn = document.getElementById('submitVerification');
-   
+  
     if (!submitBtn) return;
-   
+  
     const hasSelection = Array.from(actionRadios).some(radio => radio.checked);
     submitBtn.disabled = !hasSelection;
-   
+  
     // Update button text and color based on selected action
     const selectedAction = Array.from(actionRadios).find(radio => radio.checked);
     if (selectedAction) {
@@ -2654,45 +2676,45 @@ async function submitVerification() {
         showSuccessPopup('No product selected for verification', 'error');
         return;
     }
-   
+  
     const actionRadios = document.querySelectorAll('input[name="verificationAction"]');
     const selectedAction = Array.from(actionRadios).find(radio => radio.checked);
-   
+  
     if (!selectedAction) {
         showSuccessPopup('Please select an action', 'error');
         return;
     }
-   
+  
     const action = selectedAction.value;
     const productId = currentVerificationProduct.productId;
     const productName = currentVerificationProduct.productName;
-   
+  
     console.log(`Submitting verification for product ${productId} (${productName}): ${action}`);
-   
+  
     try {
         // Show loading state
         const submitBtn = document.getElementById('submitVerification');
         const originalText = submitBtn.textContent;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
         submitBtn.disabled = true;
-       
+      
         // Call verification API
         await verificationService.verifyProduct(productId, action);
-       
+      
         // Show success message
         const actionText = action === 'APPROVE' ? 'approved' : 'rejected';
         showSuccessPopup(`"${productName}" ${actionText} successfully!`);
-       
+      
         // Close modal
         closeVerificationModal();
-       
+      
         // Reload products to reflect changes
         await loadProducts();
-       
+      
     } catch (error) {
         console.error(`Error ${action.toLowerCase()}ing product:`, error);
         showSuccessPopup(`Error: ${error.message}`, 'error');
-       
+      
         // Reset button
         const submitBtn = document.getElementById('submitVerification');
         if (submitBtn) {
@@ -2703,12 +2725,12 @@ async function submitVerification() {
 }
 
 // ============================================
-// STATS AND FILTER FUNCTIONS
+// STATS AND FILTER FUNCTIONS (unchanged)
 // ============================================
 async function updateStats() {
     try {
         const products = await productService.getAllProducts(0, 1000);
-       
+      
         const total = products.length;
         const lowStock = products.filter(p => getStockStatus(p.productQuantity) === 'Low Stock').length;
         const inStock = products.filter(p => getStockStatus(p.productQuantity) === 'In Stock').length;
@@ -2735,7 +2757,7 @@ function updateStatsWithFilteredData(filtered) {
     const inStock = filtered.filter(p => getStockStatus(p.productQuantity) === 'In Stock').length;
     const expiring = filtered.filter(p => isExpiringSoon(p.expDate)).length;
     const pendingVerification = filtered.filter(p => p.approved === null || p.approved === false).length;
-   
+  
     // Update stats display
     document.getElementById('totalProducts').textContent = total;
     document.getElementById('lowStockItems').textContent = lowStock;
@@ -2745,15 +2767,15 @@ function updateStatsWithFilteredData(filtered) {
 }
 
 // ============================================
-// PRODUCT DETAILS MODAL
+// PRODUCT DETAILS MODAL (unchanged)
 // ============================================
 async function showProductDetails(product) {
     try {
         const productDetails = await productService.getProductById(product.productId);
         console.log('Product details fetched:', productDetails);
-       
+      
         const productDetailModal = document.getElementById('productDetailModal');
-       
+      
         // Set basic information
         document.getElementById('detail-id').textContent = productDetails.productId || 'N/A';
         document.getElementById('detail-sku').textContent = productDetails.sku || 'N/A';
@@ -2765,18 +2787,18 @@ async function showProductDetails(product) {
         document.getElementById('detail-status').innerHTML = `<span class="status-badge ${productDetails.productStatus === 'Available' ? 'status-available' : productDetails.productStatus === 'Unavailable' ? 'status-unavailable' : 'status-discontinued'}">${productDetails.productStatus || 'N/A'}</span>`;
         document.getElementById('detail-quantity').textContent = `${productDetails.productQuantity || 0} ${productDetails.unit || 'unit'}`;
         document.getElementById('detail-unit').textContent = productDetails.unit || 'N/A';
-       
+      
         // Handle dynamic pricing display
         const sizes = productDetails.productSizes || [];
         const prices = productDetails.productPrice || [];
         const oldPrices = productDetails.productOldPrice || [];
-       
+      
         let pricingHtml = '';
         if (sizes.length > 0) {
             sizes.forEach((size, index) => {
                 const price = prices[index] || 'N/A';
                 const oldPrice = oldPrices[index];
-               
+              
                 pricingHtml += `
                     <div class="mb-2 p-2 bg-gray-50 rounded">
                         <strong>${size}:</strong>
@@ -2799,17 +2821,17 @@ async function showProductDetails(product) {
         } else {
             pricingHtml = 'N/A';
         }
-       
+      
         document.getElementById('detail-mrp').innerHTML = pricingHtml;
         document.getElementById('detail-price').innerHTML = pricingHtml;
         document.getElementById('detail-old-price').innerHTML = oldPrices.length > 0 ? 'See pricing above' : 'N/A';
-       
+      
         document.getElementById('detail-rating').innerHTML = `${getStarRating(productDetails.rating || 0)} ${(productDetails.rating || 0).toFixed(1)}`;
         document.getElementById('detail-batch').textContent = productDetails.batchNo || 'N/A';
         document.getElementById('detail-mfg-date').textContent = formatDate(productDetails.mfgDate);
         document.getElementById('detail-expiry').textContent = formatDate(productDetails.expDate);
         document.getElementById('detail-description').textContent = productDetails.productDescription || 'N/A';
-       
+      
         // Benefits
         const benefitsList = document.getElementById('detail-benefits');
         benefitsList.innerHTML = '';
@@ -2822,7 +2844,7 @@ async function showProductDetails(product) {
         } else {
             benefitsList.textContent = 'N/A';
         }
-       
+      
         // Directions
         const directionsList = document.getElementById('detail-directions');
         directionsList.innerHTML = '';
@@ -2835,7 +2857,7 @@ async function showProductDetails(product) {
         } else {
             directionsList.textContent = 'N/A';
         }
-       
+      
         // Ingredients
         const ingredientsList = document.getElementById('detail-ingredients');
         ingredientsList.innerHTML = '';
@@ -2848,7 +2870,7 @@ async function showProductDetails(product) {
         } else {
             ingredientsList.textContent = 'N/A';
         }
-       
+      
         // Sizes
         const sizesContainer = document.getElementById('detail-sizes');
         sizesContainer.innerHTML = '';
@@ -2862,11 +2884,11 @@ async function showProductDetails(product) {
         } else {
             sizesContainer.textContent = 'N/A';
         }
-       
+      
         // Dynamic Fields
         const dynamicFields = document.getElementById('detail-dynamic-fields');
         dynamicFields.innerHTML = '';
-       
+      
         if (productDetails.productDynamicFields && typeof productDetails.productDynamicFields === 'object') {
             Object.entries(productDetails.productDynamicFields).forEach(([key, value]) => {
                 if (value !== null && value !== undefined) {
@@ -2880,27 +2902,27 @@ async function showProductDetails(product) {
                 }
             });
         }
-       
+      
         if (!dynamicFields.innerHTML) dynamicFields.textContent = 'N/A';
-       
+      
         const stockStatus = getStockStatus(productDetails.productQuantity);
         const stockStatusElement = document.getElementById('detail-stock-status');
         stockStatusElement.textContent = stockStatus;
         stockStatusElement.className = `status-badge ${stockStatus === 'In Stock' ? 'status-in-stock' : stockStatus === 'Low Stock' ? 'status-low-stock' : 'status-out-of-stock'}`;
-       
+      
         // Verification Details
         const verificationStatus = productDetails.approved === true ? 'APPROVED' :
                                  productDetails.approved === false ? 'REJECTED' : 'PENDING';
         const verificationElement = document.getElementById('detail-verification-status');
         verificationElement.innerHTML = `<span class="status-badge ${verificationStatus === 'APPROVED' ? 'status-approved' : verificationStatus === 'REJECTED' ? 'status-rejected' : 'status-pending'}">${verificationStatus}</span>`;
-       
+      
         // Hide verification details sections since API doesn't have these fields
         document.getElementById('detail-verified-by-container').style.display = 'none';
         document.getElementById('detail-verified-at-container').style.display = 'none';
         document.getElementById('detail-rejection-reason-container').style.display = 'none';
         document.getElementById('detail-added').textContent = formatDate(productDetails.createdAt);
         document.getElementById('detail-updated').textContent = formatDate(productDetails.createdAt);
-       
+      
         // Images
         const mainImageContainer = document.getElementById('detail-main-image');
         mainImageContainer.innerHTML = '';
@@ -2917,16 +2939,16 @@ async function showProductDetails(product) {
         } else {
             mainImageContainer.textContent = 'No main image';
         }
-       
+      
         const detailImages = document.getElementById('detail-images');
         detailImages.innerHTML = '';
         if (productDetails.productSubImages && productDetails.productSubImages.length > 0) {
             productDetails.productSubImages.forEach((img, index) => {
                 if (!img) return;
-               
+              
                 const imgContainer = document.createElement('div');
                 imgContainer.className = 'relative';
-               
+              
                 const imgElement = document.createElement('img');
                 imgElement.src = img;
                 imgElement.alt = `Product Image ${index + 1}`;
@@ -2936,25 +2958,25 @@ async function showProductDetails(product) {
                     console.error('Failed to load sub image:', img);
                 };
                 imgContainer.appendChild(imgElement);
-               
+              
                 if (index === 0) {
                     const badge = document.createElement('span');
                     badge.className = 'absolute top-1 left-1 bg-blue-500 text-white text-xs px-2 py-1 rounded';
                     badge.textContent = 'Main';
                     imgContainer.appendChild(badge);
                 }
-               
+              
                 detailImages.appendChild(imgContainer);
             });
         } else {
             detailImages.textContent = 'No additional images available';
         }
-       
+      
         // Update edit button to use the productDetails with fixed image URLs
         document.getElementById('editProductBtn').onclick = () => openEditModal(productDetails);
-       
+      
         productDetailModal.style.display = 'flex';
-       
+      
         console.log('Product details modal displayed');
     } catch (error) {
         console.error('Error showing product details:', error);
@@ -2967,37 +2989,37 @@ async function showProductDetails(product) {
 }
 
 // ============================================
-// FORM SUBMISSION AND VALIDATION
+// FORM SUBMISSION AND VALIDATION (unchanged)
 // ============================================
 async function handleFormSubmit(e) {
     e.preventDefault();
     try {
         console.log('=== FORM SUBMISSION STARTED ===');
-       
+      
         // Get price data
         const priceData = getPriceData();
-       
+      
         // Get sizes
         const sizesInput = document.getElementById('edit-sizes').value.trim();
         const sizes = sizesInput ? sizesInput.split(',').map(s => s.trim()).filter(s => s) : [];
-       
+      
         // Get benefits, directions, ingredients
         const benefits = document.getElementById('edit-benefits').value
             .split('\n')
             .filter(b => b.trim())
             .map(b => b.trim());
-           
+          
         const directionsInput = document.getElementById('edit-directions');
         const directions = directionsInput ? directionsInput.value
             .split('\n')
             .filter(d => d.trim())
             .map(d => d.trim()) : [];
-           
+          
         const ingredients = document.getElementById('edit-ingredients').value
             .split(',')
             .filter(i => i.trim())
             .map(i => i.trim());
-       
+      
         // Prepare product data
         const productData = {
             // Basic information
@@ -3011,66 +3033,66 @@ async function handleFormSubmit(e) {
                 : document.getElementById('edit-type').value,
             brand: document.getElementById('edit-brand').value.trim(),
             description: document.getElementById('edit-description').value.trim(),
-           
+          
             // Stock & pricing
             prices: priceData.prices,
             oldPrices: priceData.oldPrices,
             quantity: parseInt(document.getElementById('edit-quantity').value) || 0,
-           
+          
             // Status & requirements
             status: document.getElementById('edit-status').value,
             prescription: document.getElementById('edit-prescription').value,
-           
+          
             // Dates & batch
             mfgDate: document.getElementById('edit-mfg-date').value,
             expiry: document.getElementById('edit-expiry').value,
             batch: document.getElementById('edit-batch').value.trim(),
-           
+          
             // Rating
             rating: parseFloat(document.getElementById('edit-rating').value) || 0,
-           
+          
             // Lists
             benefits: benefits,
             ingredients: ingredients,
             directions: directions,
             sizes: sizes,
-           
+          
             // Dynamic fields
             strength: document.getElementById('edit-strength').value.trim() || '',
             form: document.getElementById('edit-form').value.trim() || '',
             dosage: document.getElementById('edit-dosage').value.trim() || ''
         };
-       
+      
         console.log('Product data to be sent:', productData);
-       
+      
         // Validation
         if (!productData.sku || !productData.name) {
             showSuccessPopup('SKU and Product Name are required', 'error');
             return;
         }
-       
+      
         if (!productData.category || !productData.type) {
             showSuccessPopup('Category and Subcategory are required', 'error');
             return;
         }
-       
+      
         if (productData.prices.length === 0) {
             showSuccessPopup('At least one price is required', 'error');
             return;
         }
-       
+      
         // Check for negative prices
         if (productData.prices.some(price => price <= 0)) {
             showSuccessPopup('All prices must be greater than zero', 'error');
             return;
         }
-       
+      
         // Check quantity
         if (productData.quantity < 0) {
             showSuccessPopup('Quantity must be non-negative', 'error');
             return;
         }
-       
+      
         // Get main image
         const mainImageInput = document.getElementById('edit-main-image');
         let mainImage = null;
@@ -3081,7 +3103,7 @@ async function handleFormSubmit(e) {
             showSuccessPopup('Main product image is required for new products', 'error');
             return;
         }
-       
+      
         // Get sub images
         const subImages = [];
         for (let i = 1; i <= 4; i++) {
@@ -3090,7 +3112,7 @@ async function handleFormSubmit(e) {
                 subImages.push(subImageInput.files[0]);
             }
         }
-       
+      
         // Make API call
         let result;
         if (currentProductId) {
@@ -3102,16 +3124,16 @@ async function handleFormSubmit(e) {
             result = await productService.createProduct(productData, mainImage, subImages);
             showSuccessPopup('Product added successfully! It is now pending verification.');
         }
-       
+      
         // Close modal and reset
         const editProductModal = document.getElementById('editProductModal');
         if (editProductModal) editProductModal.style.display = 'none';
-       
+      
         resetEditForm();
-       
+      
         // Reload products
         await loadProducts();
-       
+      
     } catch (error) {
         console.error('Error in handleFormSubmit:', error);
         console.error('Error stack:', error.stack);
@@ -3120,9 +3142,8 @@ async function handleFormSubmit(e) {
 }
 
 // ============================================
-// BARCODE AND QR CODE GENERATION FUNCTIONS
+// BARCODE AND QR CODE GENERATION FUNCTIONS (unchanged)
 // ============================================
-
 // Initialize barcode functionality
 function initializeBarcodeFunctionality() {
     // Add event listeners for barcode settings
@@ -3132,7 +3153,7 @@ function initializeBarcodeFunctionality() {
     const barcodeHeight = document.getElementById('barcodeHeight');
     const includeProductInfo = document.getElementById('includeProductInfo');
     const customBarcodeText = document.getElementById('customBarcodeText');
-   
+  
     if (barcodeFormat) {
         barcodeFormat.addEventListener('change', function() {
             const customContainer = document.getElementById('customTextContainer');
@@ -3144,13 +3165,13 @@ function initializeBarcodeFunctionality() {
             updateBarcodePreview();
         });
     }
-   
+  
     if (barcodeType) barcodeType.addEventListener('change', updateBarcodePreview);
     if (barcodeWidth) barcodeWidth.addEventListener('input', updateBarcodePreview);
     if (barcodeHeight) barcodeHeight.addEventListener('input', updateBarcodePreview);
     if (includeProductInfo) includeProductInfo.addEventListener('change', updateBarcodePreview);
     if (customBarcodeText) customBarcodeText.addEventListener('input', updateBarcodePreview);
-   
+  
     console.log('Barcode functionality initialized');
 }
 
@@ -3158,7 +3179,7 @@ function initializeBarcodeFunctionality() {
 function updateSelectedProductsForBarcode() {
     selectedProductsForBarcode = [];
     const checkboxes = document.querySelectorAll('.product-checkbox:checked');
-   
+  
     checkboxes.forEach(checkbox => {
         const productId = checkbox.getAttribute('data-id');
         const product = filteredProducts.find(p => p.productId == productId);
@@ -3166,7 +3187,7 @@ function updateSelectedProductsForBarcode() {
             selectedProductsForBarcode.push(product);
         }
     });
-   
+  
     console.log(`Selected ${selectedProductsForBarcode.length} products for barcode generation`);
 }
 
@@ -3193,7 +3214,7 @@ function generateSingleBarcode(productId) {
         showSuccessPopup('Product not found', 'error');
         return;
     }
-   
+  
     selectedProductsForBarcode = [product];
     openBarcodeModal();
 }
@@ -3204,17 +3225,17 @@ function openBarcodeModal() {
         showSuccessPopup('No products selected', 'error');
         return;
     }
-   
+  
     const modal = document.getElementById('barcodeModal');
     if (!modal) return;
-   
+  
     // Update selected products list
     updateSelectedProductsList();
-   
+  
     // Update counts
     document.getElementById('selectedCount').textContent = `${selectedProductsForBarcode.length} products selected`;
     document.getElementById('totalBarcodes').textContent = selectedProductsForBarcode.length;
-   
+  
     // Reset form to defaults
     document.getElementById('barcodeType').value = 'CODE128';
     document.getElementById('barcodeFormat').value = 'sku';
@@ -3223,10 +3244,10 @@ function openBarcodeModal() {
     document.getElementById('includeProductInfo').checked = true;
     document.getElementById('customTextContainer').classList.add('hidden');
     document.getElementById('customBarcodeText').value = '';
-   
+  
     // Show modal
     modal.style.display = 'flex';
-   
+  
     // Generate initial preview
     setTimeout(updateBarcodePreview, 100);
 }
@@ -3243,9 +3264,9 @@ function closeBarcodeModalFunc() {
 function updateSelectedProductsList() {
     const container = document.getElementById('selectedProductsList');
     if (!container) return;
-   
+  
     container.innerHTML = '';
-   
+  
     selectedProductsForBarcode.slice(0, 10).forEach(product => {
         const barcodeData = getBarcodeData(product);
         const row = document.createElement('tr');
@@ -3258,7 +3279,7 @@ function updateSelectedProductsList() {
         `;
         container.appendChild(row);
     });
-   
+  
     if (selectedProductsForBarcode.length > 10) {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -3270,10 +3291,10 @@ function updateSelectedProductsList() {
     }
 }
 
-// Get barcode data based on selected format
+// Helper function to get barcode data (ensure this exists in your code)
 function getBarcodeData(product) {
     const format = document.getElementById('barcodeFormat')?.value || 'sku';
-   
+  
     switch(format) {
         case 'sku':
             return product.sku || `SKU-${product.productId}`;
@@ -3289,73 +3310,50 @@ function getBarcodeData(product) {
     }
 }
 
-// Validate barcode data for specific barcode types
+// Validate barcode data for specific barcode types - FIXED VERSION
 function validateBarcodeData(barcodeData, barcodeType) {
     if (!barcodeData || barcodeData.trim() === '') {
         return { valid: false, error: 'Barcode data cannot be empty' };
     }
-   
+  
     const data = barcodeData.trim();
-   
-    switch(barcodeType) {
-        case 'EAN13':
-            // EAN-13 requires 12 or 13 digits
-            if (!/^\d{12,13}$/.test(data)) {
-                return { valid: false, error: 'EAN-13 requires 12 or 13 digits' };
-            }
-            break;
-           
-        case 'EAN8':
-            // EAN-8 requires 7 or 8 digits
-            if (!/^\d{7,8}$/.test(data)) {
-                return { valid: false, error: 'EAN-8 requires 7 or 8 digits' };
-            }
-            break;
-           
-        case 'UPC':
-            // UPC requires 11 or 12 digits
-            if (!/^\d{11,12}$/.test(data)) {
-                return { valid: false, error: 'UPC requires 11 or 12 digits' };
-            }
-            break;
-           
-        case 'ITF14':
-            // ITF-14 requires 13 or 14 digits
-            if (!/^\d{13,14}$/.test(data)) {
-                return { valid: false, error: 'ITF-14 requires 13 or 14 digits' };
-            }
-            break;
-           
-        case 'CODE39':
-            // CODE39 allows alphanumeric and some symbols
-            if (!/^[A-Z0-9\-\.\ \$\/\+\%]+$/i.test(data)) {
-                return { valid: false, error: 'CODE39 allows only alphanumeric characters and -.$/+%' };
-            }
-            break;
-           
-        case 'pharmacode':
-            // Pharmacode requires numeric only
-            if (!/^\d+$/.test(data)) {
-                return { valid: false, error: 'Pharmacode requires numeric only' };
-            }
-            break;
-           
-        case 'MSI':
-            // MSI requires numeric only
-            if (!/^\d+$/.test(data)) {
-                return { valid: false, error: 'MSI requires numeric only' };
-            }
-            break;
-           
-        case 'CODE128':
-        default:
-            // CODE128 supports all ASCII characters
-            if (data.length === 0) {
-                return { valid: false, error: 'Barcode data cannot be empty' };
-            }
-            break;
+  
+    // If using CODE128 (default), allow all characters
+    if (barcodeType === 'CODE128') {
+        return { valid: true };
     }
-   
+  
+    // For numeric-only barcode types, we need to ensure data is numeric
+    // But if it's not, we should use CODE128 instead
+    const numericBarcodeTypes = ['EAN13', 'EAN8', 'UPC', 'ITF14', 'pharmacode', 'MSI'];
+    if (numericBarcodeTypes.includes(barcodeType)) {
+        if (!/^\d+$/.test(data)) {
+            // Data contains non-numeric characters, so this barcode type won't work
+            return { valid: false, error: `${barcodeType} requires numeric characters only` };
+        }
+    }
+  
+    // For CODE39, check if it contains valid characters
+    if (barcodeType === 'CODE39') {
+        if (!/^[A-Z0-9\-\.\ \$\/\+\%]+$/i.test(data)) {
+            return { valid: false, error: 'CODE39 allows only alphanumeric characters and -.$/+%' };
+        }
+    }
+  
+    // Check specific length requirements for certain barcode types
+    if (barcodeType === 'EAN13' && data.length !== 13) {
+        return { valid: false, error: 'EAN-13 requires exactly 13 digits' };
+    }
+    if (barcodeType === 'EAN8' && data.length !== 8) {
+        return { valid: false, error: 'EAN-8 requires exactly 8 digits' };
+    }
+    if (barcodeType === 'UPC' && data.length !== 12) {
+        return { valid: false, error: 'UPC requires exactly 12 digits' };
+    }
+    if (barcodeType === 'ITF14' && data.length !== 14) {
+        return { valid: false, error: 'ITF-14 requires exactly 14 digits' };
+    }
+  
     return { valid: true };
 }
 
@@ -3368,12 +3366,12 @@ function updateBarcodePreview() {
         }
         return;
     }
-   
+  
     const product = selectedProductsForBarcode[0]; // Preview first product
     const barcodeData = getBarcodeData(product);
     const includeInfo = document.getElementById('includeProductInfo')?.checked || false;
     const type = document.getElementById('barcodeType')?.value || 'CODE128';
-   
+  
     // Validate barcode data
     const validation = validateBarcodeData(barcodeData, type);
     if (!validation.valid) {
@@ -3382,37 +3380,37 @@ function updateBarcodePreview() {
                 <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
                 <p>Invalid barcode data for ${type}</p>
                 <p class="text-xs mt-1">${validation.error}</p>
-                <p class="text-sm mt-2">Try using a different barcode type or format</p>
+                <p class="text-sm mt-2">Try using CODE128 for alphanumeric data like SKUs</p>
             </div>
         `;
         return;
     }
-   
+  
     preview.innerHTML = '';
-   
+  
     // Generate Barcode
     const width = parseFloat(document.getElementById('barcodeWidth')?.value || 2);
     const height = parseFloat(document.getElementById('barcodeHeight')?.value || 40);
-   
+  
     // Create container for barcode
     const barcodeContainer = document.createElement('div');
     barcodeContainer.id = 'barcodeContainer';
     barcodeContainer.className = 'inline-block';
-   
+  
     // Create SVG element
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.id = 'previewBarcode';
     svg.className = 'barcode-svg';
-   
+  
     barcodeContainer.appendChild(svg);
     preview.appendChild(barcodeContainer);
-   
+  
     try {
         // Check if JsBarcode is available
         if (typeof JsBarcode === 'undefined') {
             throw new Error('JsBarcode library not loaded. Make sure the script is included.');
         }
-       
+      
         // Generate barcode with appropriate options
         const options = {
             format: type,
@@ -3425,14 +3423,14 @@ function updateBarcodePreview() {
             background: '#ffffff',
             lineColor: '#000000'
         };
-       
+      
         // Special options for specific barcode types
         if (type === 'CODE39') {
             options.displayValue = false; // CODE39 has built-in text
         }
-       
+      
         JsBarcode('#previewBarcode', barcodeData, options);
-       
+      
         // Add product info if enabled
         if (includeInfo) {
             const infoDiv = document.createElement('div');
@@ -3440,20 +3438,20 @@ function updateBarcodePreview() {
             infoDiv.innerHTML = `
                 <div class="barcode-product-name font-medium text-gray-800">${product.productName || 'N/A'}</div>
                 <div class="barcode-details text-sm text-gray-600 mt-1">
-                    SKU: ${product.sku || 'N/A'} | 
-                    Price: ₹${product.productPrice?.[0] || '0.00'} | 
+                    SKU: ${product.sku || 'N/A'} |
+                    Price: ₹${product.productPrice?.[0] || '0.00'} |
                     Exp: ${formatDate(product.expDate) || 'N/A'}
                 </div>
             `;
             preview.appendChild(infoDiv);
         }
-       
+      
         // Add barcode type info
         const typeDiv = document.createElement('div');
         typeDiv.className = 'text-xs text-gray-500 mt-2';
         typeDiv.textContent = `Type: ${type} | Data: ${barcodeData}`;
         preview.appendChild(typeDiv);
-       
+      
     } catch (error) {
         console.error('Error generating barcode:', error);
         preview.innerHTML = `
@@ -3461,46 +3459,49 @@ function updateBarcodePreview() {
                 <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
                 <p>Error generating barcode preview</p>
                 <p class="text-xs mt-1">${error.message}</p>
-                <p class="text-xs mt-2">Make sure to include: &lt;script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"&gt;&lt;/script&gt;</p>
+                <p class="text-xs mt-2">Try using CODE128 barcode type for alphanumeric data</p>
             </div>
         `;
     }
 }
 
-// Generate all barcodes - FIXED VERSION
+// FIXED: Generate all barcodes for printing
 function generateBarcodes() {
     if (selectedProductsForBarcode.length === 0) {
         showSuccessPopup('No products selected', 'error');
         return;
     }
-   
+  
     // Check if JsBarcode is available
     if (typeof JsBarcode === 'undefined') {
         showSuccessPopup('JsBarcode library not loaded. Please refresh the page.', 'error');
         return;
     }
-   
+  
     const includeInfo = document.getElementById('includeProductInfo')?.checked || false;
-    const type = document.getElementById('barcodeType')?.value || 'CODE128';
+    const type = 'CODE128'; // Always use CODE128 for alphanumeric SKUs
     const width = parseFloat(document.getElementById('barcodeWidth')?.value || 2);
     const height = parseFloat(document.getElementById('barcodeHeight')?.value || 40);
-   
+  
+    console.log(`Generating barcodes for ${selectedProductsForBarcode.length} products`);
+  
     // Create print window
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
         showSuccessPopup('Please allow popups to generate barcodes', 'error');
         return;
     }
-   
+  
+    // Write HTML structure
     printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
             <title>Product Barcodes</title>
             <style>
-                body { 
-                    font-family: Arial, sans-serif; 
-                    margin: 20px; 
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 20px;
                     padding: 0;
                 }
                 .header {
@@ -3509,83 +3510,73 @@ function generateBarcodes() {
                     padding-bottom: 10px;
                     border-bottom: 2px solid #333;
                 }
-                .barcode-page { 
-                    display: grid; 
-                    grid-template-columns: repeat(3, 1fr); 
-                    gap: 15px; 
+                .barcode-page {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 15px;
                 }
-                .barcode-item { 
-                    text-align: center; 
-                    padding: 10px; 
-                    border: 1px solid #ddd; 
-                    page-break-inside: avoid; 
+                .barcode-item {
+                    text-align: center;
+                    padding: 10px;
+                    border: 1px solid #ddd;
+                    page-break-inside: avoid;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
                     min-height: 150px;
                 }
-                .barcode-svg { 
-                    display: block; 
-                    margin: 0 auto; 
+                .barcode-svg {
+                    display: block;
+                    margin: 0 auto;
                     max-width: 100%;
                 }
-                .barcode-info { 
-                    margin-top: 8px; 
-                    font-size: 11px; 
+                .barcode-info {
+                    margin-top: 8px;
+                    font-size: 11px;
                 }
-                .barcode-product-name { 
-                    font-weight: bold; 
-                    margin-bottom: 2px; 
+                .barcode-product-name {
+                    font-weight: bold;
+                    margin-bottom: 2px;
                 }
-                .barcode-details { 
-                    font-size: 9px; 
-                    color: #666; 
+                .barcode-details {
+                    font-size: 9px;
+                    color: #666;
                 }
                 @media print {
                     .barcode-item { border: none; }
                     body { margin: 10mm; }
                 }
-                @page { 
-                    size: A4; 
-                    margin: 15mm; 
+                @page {
+                    size: A4;
+                    margin: 15mm;
                 }
             </style>
-            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
         </head>
         <body>
             <div class="header">
                 <h2>Product Barcodes (${selectedProductsForBarcode.length} items)</h2>
                 <p>Generated on ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
-                <p>Barcode Type: ${type}</p>
+                <p>Barcode Type: CODE128</p>
             </div>
             <div class="barcode-page">
     `);
-   
+  
     // Generate barcode for each product
     selectedProductsForBarcode.forEach((product, index) => {
         const barcodeData = getBarcodeData(product);
         const itemId = `barcode-${index}`;
-       
-        // Validate barcode data
-        const validation = validateBarcodeData(barcodeData, type);
-        const isValid = validation.valid;
-       
+      
         printWindow.document.write(`
             <div class="barcode-item">
-                <div id="${itemId}" class="barcode-svg"></div>
-                ${!isValid ? `
-                    <div class="text-red-500 text-sm mt-2">
-                        <i class="fas fa-exclamation-circle"></i>
-                        Invalid for ${type}: ${validation.error}
-                    </div>
-                ` : ''}
+                <svg id="${itemId}" class="barcode-svg"></svg>
                 ${includeInfo ? `
                     <div class="barcode-info">
                         <div class="barcode-product-name">${(product.productName || 'N/A').substring(0, 30)}${(product.productName || '').length > 30 ? '...' : ''}</div>
                         <div class="barcode-details">
-                            SKU: ${product.sku || 'N/A'} | 
-                            Price: ₹${product.productPrice?.[0] || '0.00'} | 
+                            SKU: ${product.sku || 'N/A'} |
+                            Price: ₹${product.productPrice?.[0] || '0.00'} |
                             Exp: ${formatDate(product.expDate) || 'N/A'}
                         </div>
                     </div>
@@ -3594,77 +3585,279 @@ function generateBarcodes() {
             </div>
         `);
     });
-   
+  
     printWindow.document.write(`
             </div>
             <script>
                 // Generate barcodes after page loads
                 window.onload = function() {
     `);
-   
+  
     // Generate barcodes in the print window
     selectedProductsForBarcode.forEach((product, index) => {
         const barcodeData = getBarcodeData(product);
-        const validation = validateBarcodeData(barcodeData, type);
-       
-        if (validation.valid) {
-            printWindow.document.write(`
-                try {
-                    JsBarcode('#barcode-${index}', '${barcodeData.replace(/'/g, "\\'")}', {
-                        format: '${type}',
-                        width: ${width},
-                        height: ${height},
-                        displayValue: ${type !== 'CODE39'},
-                        fontSize: 10,
-                        margin: 5,
-                        background: '#ffffff',
-                        lineColor: '#000000'
-                    });
-                } catch(e) {
-                    console.error('Error generating barcode ${index}:', e);
-                    document.getElementById('barcode-${index}').innerHTML = '<div class="text-red-500 text-center">Error: ' + e.message + '</div>';
-                }
-            `);
-        }
+      
+        // Escape single quotes in the barcode data
+        const escapedData = barcodeData.replace(/'/g, "\\'");
+      
+        printWindow.document.write(`
+                    try {
+                        JsBarcode('#barcode-${index}', '${escapedData}', {
+                            format: 'CODE128',
+                            width: ${width},
+                            height: ${height},
+                            displayValue: true,
+                            fontSize: 10,
+                            margin: 5,
+                            background: '#ffffff',
+                            lineColor: '#000000'
+                        });
+                    } catch(e) {
+                        console.error('Error generating barcode ${index}:', e);
+                        document.getElementById('barcode-${index}').innerHTML = '<text x="10" y="20" style="font-size: 12px;">Error: ' + e.message + '</text>';
+                    }
+        `);
     });
-   
+  
     printWindow.document.write(`
                     // Auto-print after 1 second
                     setTimeout(() => {
                         window.print();
                     }, 1000);
                 }
-            <\/script>
+            </script>
         </body>
         </html>
     `);
-   
+  
     printWindow.document.close();
     showSuccessPopup(`Generating ${selectedProductsForBarcode.length} barcodes in new window...`, 'info');
 }
 
-// Download barcodes as PDF
 function downloadBarcodes() {
-    showSuccessPopup('PDF download would require a server-side component. Use Print instead.', 'info');
+    if (selectedProductsForBarcode.length === 0) {
+        showSuccessPopup('No products selected', 'error');
+        return;
+    }
+  
+    // FIXED: Correct way to get jsPDF
+    const jsPDF = window.jspdf?.jsPDF || window.jsPDF;
+   
+    if (!jsPDF) {
+        showSuccessPopup('PDF library not loaded. Using print instead...', 'info');
+        setTimeout(() => generateBarcodes(), 500);
+        return;
+    }
+  
+    if (typeof html2canvas === 'undefined') {
+        showSuccessPopup('Canvas library not loaded. Using print instead...', 'info');
+        setTimeout(() => generateBarcodes(), 500);
+        return;
+    }
+  
+    const includeInfo = document.getElementById('includeProductInfo')?.checked || false;
+    const type = 'CODE128'; // Always use CODE128
+    const width = parseFloat(document.getElementById('barcodeWidth')?.value || 2);
+    const height = parseFloat(document.getElementById('barcodeHeight')?.value || 40);
+  
+    // Show loading message
+    showSuccessPopup('Generating PDF... Please wait.', 'info');
+  
+    // Create a temporary container for PDF generation
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'absolute';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.top = '0';
+    tempContainer.style.width = '210mm'; // A4 width
+    tempContainer.style.backgroundColor = 'white';
+    tempContainer.style.padding = '20px';
+    tempContainer.style.fontFamily = 'Arial, sans-serif';
+  
+    // Add header
+    const header = document.createElement('div');
+    header.innerHTML = `
+        <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px;">
+            <h2 style="margin: 0; color: #333;">Product Barcodes</h2>
+            <p style="margin: 5px 0; color: #666;">Generated on ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
+            <p style="margin: 5px 0; color: #666;">Total: ${selectedProductsForBarcode.length} products</p>
+            <p style="margin: 5px 0; color: #666;">Barcode Type: CODE128</p>
+        </div>
+    `;
+    tempContainer.appendChild(header);
+  
+    // Create barcode container
+    const barcodeContainer = document.createElement('div');
+    barcodeContainer.style.display = 'grid';
+    barcodeContainer.style.gridTemplateColumns = 'repeat(3, 1fr)';
+    barcodeContainer.style.gap = '15px';
+    barcodeContainer.style.marginTop = '20px';
+  
+    // Generate barcodes in temp container
+    selectedProductsForBarcode.forEach((product, index) => {
+        const barcodeData = getBarcodeData(product);
+      
+        const itemDiv = document.createElement('div');
+        itemDiv.style.border = '1px solid #ddd';
+        itemDiv.style.padding = '10px';
+        itemDiv.style.textAlign = 'center';
+        itemDiv.style.display = 'flex';
+        itemDiv.style.flexDirection = 'column';
+        itemDiv.style.alignItems = 'center';
+        itemDiv.style.justifyContent = 'center';
+        itemDiv.style.minHeight = '120px';
+      
+        // Create SVG container for barcode
+        const svgContainer = document.createElement('div');
+        svgContainer.id = `temp-barcode-${index}`;
+        svgContainer.style.marginBottom = '8px';
+        itemDiv.appendChild(svgContainer);
+      
+        // Add product info
+        if (includeInfo) {
+            const infoDiv = document.createElement('div');
+            infoDiv.style.fontSize = '10px';
+            infoDiv.innerHTML = `
+                <div style="font-weight: bold; margin-bottom: 2px;">${(product.productName || 'N/A').substring(0, 25)}${(product.productName || '').length > 25 ? '...' : ''}</div>
+                <div style="color: #666; font-size: 8px;">
+                    SKU: ${product.sku || 'N/A'} |
+                    Price: ₹${product.productPrice?.[0] || '0.00'}
+                </div>
+            `;
+            itemDiv.appendChild(infoDiv);
+        }
+      
+        // Add barcode data
+        const dataDiv = document.createElement('div');
+        dataDiv.style.fontSize = '9px';
+        dataDiv.style.color = '#888';
+        dataDiv.style.marginTop = '5px';
+        dataDiv.textContent = barcodeData;
+        itemDiv.appendChild(dataDiv);
+      
+        barcodeContainer.appendChild(itemDiv);
+    });
+  
+    tempContainer.appendChild(barcodeContainer);
+    document.body.appendChild(tempContainer);
+  
+    // Generate barcodes using JsBarcode
+    setTimeout(() => {
+        selectedProductsForBarcode.forEach((product, index) => {
+            const barcodeData = getBarcodeData(product);
+          
+            try {
+                // Create SVG element
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.id = `svg-barcode-${index}`;
+                svg.style.width = '100%';
+                svg.style.height = '40px';
+              
+                document.getElementById(`temp-barcode-${index}`).appendChild(svg);
+              
+                // Generate barcode - ALWAYS USE CODE128 FOR PDF
+                JsBarcode(`#svg-barcode-${index}`, barcodeData, {
+                    format: 'CODE128',
+                    width: width,
+                    height: height,
+                    displayValue: true,
+                    fontSize: 8,
+                    margin: 2,
+                    background: '#ffffff',
+                    lineColor: '#000000'
+                });
+            } catch (error) {
+                console.error('Error generating barcode for PDF:', error);
+                const container = document.getElementById(`temp-barcode-${index}`);
+                if (container) {
+                    container.innerHTML = `<div style="color: #666; font-size: 10px;">SKU: ${product.sku || 'N/A'}</div>`;
+                }
+            }
+        });
+      
+        // Convert to PDF after barcodes are generated
+        setTimeout(() => {
+            try {
+                // Use html2canvas to capture the content
+                html2canvas(tempContainer, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                }).then(canvas => {
+                    // Create PDF using jsPDF
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgWidth = 210; // A4 width in mm
+                    const pageHeight = 295; // A4 height in mm
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                  
+                    let heightLeft = imgHeight;
+                    let position = 0;
+                  
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                  
+                    // Add additional pages if needed
+                    while (heightLeft >= 0) {
+                        position = heightLeft - imgHeight;
+                        pdf.addPage();
+                        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                        heightLeft -= pageHeight;
+                    }
+                  
+                    // Save PDF
+                    const fileName = `product_barcodes_${new Date().toISOString().split('T')[0]}.pdf`;
+                    pdf.save(fileName);
+                  
+                    // Clean up
+                    document.body.removeChild(tempContainer);
+                  
+                    showSuccessPopup('PDF downloaded successfully!', 'success');
+                }).catch(error => {
+                    console.error('Error generating PDF:', error);
+                    document.body.removeChild(tempContainer);
+                    showSuccessPopup('Error generating PDF. Please use Print instead.', 'error');
+                });
+            } catch (error) {
+                console.error('PDF generation error:', error);
+                document.body.removeChild(tempContainer);
+                showSuccessPopup('Error generating PDF: ' + error.message, 'error');
+            }
+        }, 1000); // Wait for barcodes to render
+    }, 100);
+}
+
+// FIXED: Generate and Print wrapper
+function generateAndPrint() {
+    if (selectedProductsForBarcode.length === 0) {
+        showSuccessPopup('No products selected', 'error');
+        return;
+    }
+  
+    // Just call generateBarcodes which handles printing
+    generateBarcodes();
 }
 
 // ============================================
-// EXPORT FUNCTIONS (Fixed Excel/CSV Export)
+// EXPORT FUNCTIONS (Fixed Excel/CSV Export) - unchanged
 // ============================================
 function exportToExcel(format = 'csv') {
     try {
+        // FIXED: Use allProducts to export ALL data, not just filtered
         const products = allProducts || [];
-       
+      
         if (products.length === 0) {
             showSuccessPopup('No data to export', 'error');
             return;
         }
-       
+      
+        console.log(`Exporting ${products.length} products in ${format} format`);
+      
         // Prepare data based on format
         if (format === 'csv' || format === 'detailed') {
             // CSV Export
             let csvContent = '';
-           
+          
             // CSV Header
             const headers = [
                 'ID', 'SKU', 'Product Name', 'Category', 'Subcategory', 'Brand',
@@ -3672,13 +3865,13 @@ function exportToExcel(format = 'csv') {
                 'Batch No', 'Manufacturing Date', 'Expiry Date', 'Status',
                 'Verification Status', 'Prescription Required', 'Description'
             ];
-           
+          
             if (format === 'detailed') {
                 headers.push('Benefits', 'Ingredients', 'Sizes', 'Created At');
             }
-           
+          
             csvContent += headers.join(',') + '\n';
-           
+          
             // CSV Rows
             products.forEach(product => {
                 const row = [
@@ -3701,7 +3894,7 @@ function exportToExcel(format = 'csv') {
                     product.prescriptionRequired ? 'Yes' : 'No',
                     `"${(product.productDescription || '').replace(/"/g, '""')}"`
                 ];
-               
+              
                 if (format === 'detailed') {
                     row.push(
                         `"${(product.benefitsList || []).join('; ').replace(/"/g, '""')}"`,
@@ -3710,38 +3903,42 @@ function exportToExcel(format = 'csv') {
                         formatDateForExcel(product.createdAt)
                     );
                 }
-               
+              
                 csvContent += row.join(',') + '\n';
             });
-           
+          
             // Create and download file
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
-           
+          
             const fileName = `products_export_${format}_${new Date().toISOString().split('T')[0]}.csv`;
-           
+          
             link.setAttribute('href', url);
             link.setAttribute('download', fileName);
             link.style.visibility = 'hidden';
-           
+          
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-           
+          
+            // Clean up the URL
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+          
             showSuccessPopup(`Exported ${products.length} products as ${format.toUpperCase()} successfully!`);
-           
+          
         } else if (format === 'excel') {
             // Excel Export using SheetJS
             if (typeof XLSX === 'undefined') {
-                showSuccessPopup('SheetJS library not loaded for Excel export. Using CSV instead.', 'info');
-                exportToExcel('csv');
+                console.warn('SheetJS library not loaded, using CSV instead');
+                showSuccessPopup('Excel library not loaded. Using CSV instead...', 'info');
+                setTimeout(() => exportToExcel('csv'), 500);
                 return;
             }
-           
+          
             // Prepare worksheet data
             const wsData = [];
-           
+          
             // Add header row
             const headers = [
                 'ID', 'SKU', 'Product Name', 'Category', 'Subcategory', 'Brand',
@@ -3750,7 +3947,7 @@ function exportToExcel(format = 'csv') {
                 'Verification Status', 'Prescription Required'
             ];
             wsData.push(headers);
-           
+          
             // Add data rows
             products.forEach(product => {
                 const row = [
@@ -3774,13 +3971,13 @@ function exportToExcel(format = 'csv') {
                 ];
                 wsData.push(row);
             });
-           
+          
             // Create worksheet
             const ws = XLSX.utils.aoa_to_sheet(wsData);
-           
+          
             // Set column widths
             const wscols = [
-                { wch: 8 },  // ID
+                { wch: 8 }, // ID
                 { wch: 15 }, // SKU
                 { wch: 30 }, // Product Name
                 { wch: 25 }, // Category
@@ -3790,31 +3987,31 @@ function exportToExcel(format = 'csv') {
                 { wch: 10 }, // Unit
                 { wch: 12 }, // Price
                 { wch: 12 }, // Old Price
-                { wch: 8 },  // Rating
+                { wch: 8 }, // Rating
                 { wch: 15 }, // Batch No
                 { wch: 15 }, // Mfg Date
                 { wch: 15 }, // Expiry Date
                 { wch: 12 }, // Status
                 { wch: 15 }, // Verification
-                { wch: 18 }  // Prescription
+                { wch: 18 } // Prescription
             ];
             ws['!cols'] = wscols;
-           
+          
             // Create workbook
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Products');
-           
+          
             // Generate Excel file
             const fileName = `products_export_${new Date().toISOString().split('T')[0]}.xlsx`;
             XLSX.writeFile(wb, fileName);
-           
+          
             showSuccessPopup(`Exported ${products.length} products as Excel successfully!`);
         }
-       
+      
     } catch (error) {
         console.error('Export error:', error);
         showSuccessPopup('Error exporting data: ' + error.message, 'error');
-       
+      
         // Fallback to CSV if Excel fails
         if (format === 'excel') {
             showSuccessPopup('Excel export failed, trying CSV instead...', 'info');
@@ -3831,7 +4028,7 @@ function formatDateForExcel(dateString) {
         }
         const date = new Date(dateString);
         if (isNaN(date.getTime())) return dateString;
-       
+      
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear();
@@ -3849,27 +4046,32 @@ async function deleteProduct(product) {
         try {
             console.log(`=== DELETE REQUEST ===`);
             console.log(`Product: ${product.productName} (ID: ${product.productId})`);
-           
+          
             // Simulate network delay
             await new Promise(resolve => setTimeout(resolve, 300));
-           
+          
             // Find product index
             const productIndex = DUMMY_PRODUCTS.findIndex(p => p.productId == product.productId);
-           
+          
             if (productIndex === -1) {
                 throw new Error(`Product with ID ${product.productId} not found`);
             }
-           
+          
             // Remove from dummy data
             DUMMY_PRODUCTS.splice(productIndex, 1);
-           
+
+            // ───────────────────────────────────────────────────────
+            // NEW: Save to localStorage after deletion
+            saveProductsToStorage();
+            // ───────────────────────────────────────────────────────
+          
             console.log('Delete successful');
             showSuccessPopup('Product deleted successfully!');
-           
+          
             // Refresh the table
             await loadProducts();
             await updateStats();
-           
+          
         } catch (error) {
             console.error('Delete error:', error);
             showSuccessPopup('Error deleting product. Check console.', 'error');
@@ -3901,19 +4103,27 @@ function showSuccessPopup(message, type = 'success') {
 document.addEventListener('DOMContentLoaded', async function() {
     // Initialize sidebar
     initializeSidebar();
-   
+  
     // Handle window resize for responsive sidebar
     window.addEventListener('resize', handleResponsiveSidebar);
-   
+  
     // Setup event listeners
     setupEventListeners();
-   
+  
     // Initialize barcode functionality
     initializeBarcodeFunctionality();
-   
+  
     // Add global export function
     window.exportToExcel = exportToExcel;
-   
+  
+    // Add global barcode functions
+    window.openBarcodeModalForSelected = openBarcodeModalForSelected;
+    window.openBarcodeModalForAll = openBarcodeModalForAll;
+    window.generateSingleBarcode = generateSingleBarcode;
+    window.generateBarcodes = generateBarcodes;
+    window.generateAndPrint = generateAndPrint;
+    window.downloadBarcodes = downloadBarcodes;
+  
     try {
         await initializeCategories();
         await loadProducts();
